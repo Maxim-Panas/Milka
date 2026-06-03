@@ -3,243 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Міла, ти моє серденько ✨</title>
-    <!-- Підключаємо офіційний скрипт Telegram WebApp -->
+    <title>Пригода для Міли ✨</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* --- МОБІЛЬНА СТИЛІЗАЦІЯ (CSS) --- */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; /* прибирає синій спалах при кліці на айфонах */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         body {
-            background: linear-gradient(180deg, #ffe5ec 0%, #ffc2d1 100%);
+            background: linear-gradient(180deg, #fff0f3 0%, #ffccd5 100%);
             height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             align-items: center;
+            justify-content: center;
             overflow: hidden;
             padding: 20px;
-            color: #4a4a4a;
         }
 
-        /* Контейнер гри */
-        .game-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        /* Екрани рівнів */
+        .screen {
+            display: none;
             width: 100%;
-            max-width: 360px; /* Ідеально для екранів смартфонів */
-            text-align: center;
-        }
-
-        h1 {
-            color: #ff477e;
-            font-size: 24px;
-            margin-bottom: 10px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .subtitle {
-            font-size: 14px;
-            color: #7d7d7d;
-            margin-bottom: 30px;
-            padding: 0 10px;
-        }
-
-        /* Магічне Серце (Ігровий елемент) */
-        .magic-heart-zone {
-            position: relative;
-            width: 160px;
-            height: 160px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .main-heart {
-            font-size: 100px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            user-select: none;
-            filter: drop-shadow(0 10px 15px rgba(255, 71, 126, 0.4));
-        }
-
-        /* Анімація обертання під час "ворожіння" */
-        .main-heart.spinning {
-            animation: spinAndPulse 0.6s infinite linear;
-        }
-
-        @keyframes spinAndPulse {
-            0% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.2) rotate(180deg); }
-            100% { transform: scale(1) rotate(360deg); }
-        }
-
-        /* Блок з результатом */
-        .prediction-box {
-            background: rgba(255, 255, 255, 0.9);
+            max-width: 360px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            min-height: 100px;
-            display: flex;
-            justify-content: center;
+            border-radius: 30px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(255, 75, 120, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            width: 100%;
-            box-shadow: 0 8px 25px rgba(251, 111, 146, 0.2);
-            border: 1.5px solid rgba(255, 255, 255, 0.6);
-            transform: scale(0.9);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
         }
 
-        .prediction-box.show {
-            transform: scale(1);
-            opacity: 1;
+        .screen.active {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
         }
 
-        .prediction-text {
-            font-size: 16px;
-            font-weight: 500;
-            line-height: 1.5;
-            color: #ff477e;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Підказка внизу екрану */
-        .footer-tip {
+        /* Заголовки */
+        .level-badge {
+            background: #ff477e;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
             font-size: 12px;
-            color: #a3a3a3;
-            margin-bottom: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1s;
         }
 
-        /* Частинки для кліку */
-        .heart-pop {
+        h2 { color: #ff477e; font-size: 24px; margin-top: 10px; }
+        p.desc { color: #6c757d; font-size: 14px; margin: 10px 0; line-height: 1.4; }
+
+        /* Загальна кнопка */
+        .btn {
+            background: #ff7096;
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 112, 150, 0.4);
+            width: 80%;
+            transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        /* --- СТИЛІ РІВНЯ 1 (Клікер) --- */
+        #game-canvas {
+            width: 100%;
+            height: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px dashed #ffb3c1;
+        }
+        .falling-heart {
             position: absolute;
-            pointer-events: none;
-            font-size: 20px;
-            animation: popOut 1s ease-out forwards;
+            font-size: 30px;
+            cursor: pointer;
+            animation: fall 2.5s linear forwards;
         }
+        @keyframes fall {
+            0% { top: -40px; }
+            100% { top: 100%; }
+        }
+        .score-board { font-size: 18px; font-weight: bold; color: #ff477e; }
 
-        @keyframes popOut {
-            0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
-            100% { transform: translate(var(--mx), var(--my)) scale(1.2); opacity: 0; }
+        /* --- СТИЛІ РІВНЯ 2 (Код) --- */
+        .input-code {
+            width: 90%;
+            padding: 12px;
+            border: 2px solid #ffccd5;
+            border-radius: 15px;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            color: #ff477e;
+            font-weight: bold;
         }
+        .input-code:focus { border-color: #ff477e; }
+        .hint { font-size: 12px; color: #9c89b8; font-style: italic; }
+
+        /* --- СТИЛІ РІВНЯ 3 (Колесо) --- */
+        .wheel-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 5px solid #ff477e;
+            background: conic-gradient(
+                #ffccd5 0deg 120deg, 
+                #ff7096 120deg 240deg, 
+                #ff477e 240deg 360deg
+            );
+            transition: transform 3s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            z-index: 10;
+        }
+        .prize-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px dashed #ff477e;
+            font-weight: bold;
+            color: #ff477e;
+            display: none;
+            animation: pop 0.5s ease;
+        }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <h1 id="greeting">Для Міли з коханням 💜</h1>
-        <p class="subtitle" id="sub">Торкнись серця, щоб отримати передбачення або таємне завдання</p>
-
-        <!-- Інтерактивне серце -->
-        <div class="magic-heart-zone">
-            <div class="main-heart" id="heartBtn">💖</div>
+    <!-- СТАРТОВИЙ ЕКРАН -->
+    <div class="screen active" id="scr-start">
+        <div style="margin-top: 40px;">
+            <div style="font-size: 60px;">🎁</div>
+            <h2>Пригода для Міли</h2>
+            <p class="desc">Привіт, сонечко! Я приготував для тебе квест із 3 рівнів. Пройди їх усі й отримай гарантований приз! Готова?</p>
         </div>
-
-        <!-- Віконце результату -->
-        <div class="prediction-box" id="resultBox">
-            <p class="prediction-text" id="resultText">Тут з'явиться твоя магія...</p>
-        </div>
+        <button class="btn" onclick="nextScreen('scr-l1')">Почати гру 🚀</button>
     </div>
 
-    <div class="footer-tip">Зроблено з думкою про тебе</div>
+    <!-- РІВЕНЬ 1: КЛІКЕР -->
+    <div class="screen" id="scr-l1">
+        <div class="level-badge">Рівень 1</div>
+        <h2>Впіймай кохання</h2>
+        <p class="desc">Зверху падають мої серця! Встигни клікнути/тапнути на 10 сердечок, поки не сплив час!</p>
+        <div class="score-board">Зловлено: <span id="score">0</span> / 10</div>
+        <div id="game-canvas"></div>
+        <button class="btn" id="start-l1-btn" onclick="startLevel1()">Старт 🎯</button>
+    </div>
 
-    <!-- --- ЛОГІКА ГРИ (JavaScript) --- -->
+    <!-- РІВЕНЬ 2: ЗАГАДКА -->
+    <div class="screen" id="scr-l2">
+        <div class="level-badge">Рівень 2</div>
+        <h2>Таємне слово</h2>
+        <p class="desc">Щоб відкрити сейф із призами, введи слово-пароль. <br><b>Підказка:</b> Яке твоє найулюбленіше кодове слово, лагідне ім'я, або дата? (Наприклад, твоє ім'я або слово "кохання")</p>
+        <div style="width: 100%; display:flex; flex-direction:column; gap: 15px; align-items:center;">
+            <!-- НАЛАШТУЙ ПАРОЛЬ ТУТ. Зараз стоїть: міла -->
+            <input type="text" class="input-code" id="secret-input" placeholder="Введи пароль тут...">
+            <p class="hint" id="l2-error" style="color: red; display:none;">Ой, невірний пароль! Спробуй ще раз 😘</p>
+        </div>
+        <button class="btn" onclick="checkLevel2()">Перевірити 🔑</button>
+    </div>
+
+    <!-- РІВЕНЬ 3: ПРИЗИ -->
+    <div class="screen" id="scr-l3">
+        <div class="level-badge">Фінал 🏆</div>
+        <h2>Колесо суперпризів!</h2>
+        <p class="desc">Ти впоралась! Залишився останній крок — крути колесо і забирай свій подарунок!</p>
+        
+        <div class="wheel-container">
+            <div class="wheel-pointer">👇</div>
+            <div class="wheel" id="wheel"></div>
+        </div>
+
+        <div class="prize-box" id="prize-result"></div>
+
+        <button class="btn" id="spin-btn" onclick="spinWheel()">Крутити колесо 🎪</button>
+    </div>
+
     <script>
-        // Ініціалізація Telegram WebApp (щоб він адаптувався під тему ТГ і знав, що він у боті)
+        // Ініціалізація Telegram
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Розгортає додаток на весь екран телефону
-        
-        // Повідомляємо ТГ, який колір шапки зробити
-        tg.setHeaderColor('#ffe5ec');
+        tg.expand();
+        tg.setHeaderColor('#fff0f3');
 
-        const heartBtn = document.getElementById('heartBtn');
-        const resultBox = document.getElementById('resultBox');
-        const resultText = document.getElementById('resultText');
-        
-        // Список передбачень/ігрових квестів для Міли
-        const lovePredictions = [
-            "🔮 Сьогодні тебе чекає дуууже приємний сюрприз від однієї закоханої людини! 🥰",
-            "💌 Завдання: Напиши автору цього бота три слова, які першими спадають на думку, коли ти про нього згадуєш.",
-            "🧸 Зірки кажуть, що твої обійми сьогодні мають лікувальний ефект. Терміново потрібна практика!",
-            "✨ Твоя врода сьогодні офіційно поза законом! Зменш рівень чарівності, бо серця навколо тануть. 👮‍♀️",
-            "🌸 Передбачення: Наступна твоя кава чи чай принесе тобі неймовірну радісну новину.",
-            "🎟️ Купон: Це повідомлення дає тобі право на безкоштовний масаж або смачну вечерю від автора! 😉",
-            "🌕 Ти — чиєсь найтепліше сонечко навіть у похмурий день. Пам'ятай це!"
-        ];
+        function nextScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
 
-        let isSpinning = false;
-
-        heartBtn.addEventListener('click', (e) => {
-            if (isSpinning) return; // Захист від спам-кліків під час анімації
+        // --- ЛОГІКА РІВНЯ 1 ---
+        let score = 0;
+        let gameInterval;
+        function startLevel1() {
+            document.getElementById('start-l1-btn').style.display = 'none';
+            score = 0;
+            document.getElementById('score').textContent = score;
             
-            isSpinning = true;
-            heartBtn.classList.add('spinning');
-            resultBox.classList.remove('show');
+            gameInterval = setInterval(() => {
+                createFallingHeart();
+            }, 600);
+        }
+
+        function createFallingHeart() {
+            const canvas = document.getElementById('game-canvas');
+            if(!canvas) return;
+            const heart = document.createElement('div');
+            heart.classList.add('falling-heart');
+            heart.textContent = ['❤️','💖','💝','💕'][Math.floor(Math.random()*4)];
+            heart.style.left = Math.random() * (canvas.clientWidth - 40) + 'px';
             
-            // Створюємо вибух сердечок навколо великого серця
-            createPopHearts(e);
+            heart.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // для мобілок
+                heartHit(heart);
+            });
+            heart.addEventListener('click', () => heartHit(heart));
 
-            // Імітуємо "думання" кулі/серця (600 мілісекунд)
-            setTimeout(() => {
-                heartBtn.classList.remove('spinning');
-                
-                // Вибираємо випадковий варіант
-                const randomIdx = Math.floor(Math.random() * lovePredictions.length);
-                resultText.innerHTML = lovePredictions[randomIdx];
-                
-                // Показуємо результат з гарним випливанням
-                resultBox.classList.add('show');
-                
-                // Робимо легку вібрацію на телефоні (якщо підтримується в ТГ)
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-                
-                isSpinning = false;
-            }, 700);
-        });
+            canvas.appendChild(heart);
+            setTimeout(() => { if(heart) heart.remove(); }, 2500);
+        }
 
-        // Функція створення ефекту вибуху дрібних сердечок на мобілці
-        function createPopHearts(e) {
-            const emojis = ['❤️', '💖', '💕', '✨', '🌸'];
-            const rect = heartBtn.getBoundingClientRect();
-            // Центр великого серця
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+        function heartHit(heart) {
+            heart.remove();
+            score++;
+            document.getElementById('score').textContent = score;
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-            for (let i = 0; i < 10; i++) {
-                const el = document.createElement('div');
-                el.classList.add('heart-pop');
-                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                
-                // Випадковий кут розльоту
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 60 + Math.random() * 60;
-                const mx = Math.cos(angle) * distance;
-                const my = Math.sin(angle) * distance;
-
-                el.style.setProperty('--mx', `${mx}px`);
-                el.style.setProperty('--my', `${my}px`);
-                
-                el.style.left = `${centerX - 10}px`;
-                el.style.top = `${centerY - 10}px`;
-
-                document.body.appendChild(el);
-
-                setTimeout(() => el.remove(), 1000);
+            if(score >= 10) {
+                clearInterval(gameInterval);
+                document.getElementById('game-canvas').innerHTML = '<h3 style="color:#ff477e; margin-top:30%;">Чудово! Рівень пройдено! 🌟</h3>';
+                setTimeout(() => { nextScreen('scr-l2'); }, 1500);
             }
+        }
+
+        // --- ЛОГІКА РІВНЯ 2 ---
+        function checkLevel2() {
+            const input = document.getElementById('secret-input').value.trim().toLowerCase();
+            // Сюди впиши правильну відповідь (зараз це "міла" або "мила")
+            if(input === 'міла' || input === 'мила' || input === 'кохання') {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                nextScreen('scr-l3');
+            } else {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                document.getElementById('l2-error').style.display = 'block';
+            }
+        }
+
+        // --- ЛОГІКА РІВНЯ 3 (ПРИЗИ) ---
+        function spinWheel() {
+            const wheel = document.getElementById('wheel');
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = true;
+            
+            // Випадковий кут обертання (мінімум 5 обертів + випадковий сектор)
+            const randomDegrees = Math.floor(Math.random() * 360) + 1800; 
+            wheel.style.transform = `rotate(${randomDegrees}deg)`;
+
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+
+            setTimeout(() => {
+                // Визначаємо приз на основі фінального кута
+                const finalAngle = randomDegrees % 360;
+                let prize = "";
+
+                // 3 сектори призових купонів (можеш змінити тексти на свої!)
+                if (finalAngle >= 0 && finalAngle < 120) {
+                    prize = "🎟️ Купон на Велике Романтичне Побачення! ☕✨";
+                } else if (finalAngle >= 120 && finalAngle < 240) {
+                    prize = "🎟️ Купон на 1000 і 1 обійму та ніжний масаж! 💆‍♀️🧸";
+                } else {
+                    prize = "🎟️ Купон на виконання будь-якого твого бажання! 👑💫";
+                }
+
+                const resultBox = document.getElementById('prize-result');
+                resultBox.textContent = prize;
+                resultBox.style.display = 'block';
+                
+                document.querySelector('#scr-l3 h2').textContent = "Вітання Переможниці! 🎉";
+                spinBtn.style.display = 'none';
+
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                
+                // Опціонально: відправити результат боту, щоб ти знав, що вона виграла
+                // tg.sendData(JSON.stringify({prize: prize})); 
+            }, 3000);
         }
     </script>
 </body>
