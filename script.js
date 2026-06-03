@@ -1,660 +1,512 @@
 // ═══════════════════════════════════════════════════════════════
-//  🌸 DREAM GARDEN v2.0 — Deep Progression System
-//  Cozy idle + puzzle + adventure game for Telegram Web App
-//  Style: Glassmorphism + Pastel (PRESERVED 100%)
+//  🌸 DREAM GARDEN v2.1 — Повна версія (Українська)
+//  Виправлено: кліки, пазли, UI, збереження, баланс
 // ═══════════════════════════════════════════════════════════════
 
 (function() {
   'use strict';
 
   // ═══════════════════════════════════════════════════════════════
-  //  CONFIGURATION
+  //  КОНФІГУРАЦІЯ
   // ═══════════════════════════════════════════════════════════════
   const CONFIG = {
-    SAVE_KEY: 'dreamGarden_save_v2',
-    AUTO_SAVE_INTERVAL: 30000,      // 30 seconds
-    EVENT_CHECK_INTERVAL: 15000,    // 15 seconds
-    PUZZLE_COOLDOWN: 60000,         // 60 seconds
-    PUZZLE_CHANCE: 0.08,            // 8% per check
+    SAVE_KEY: 'dreamGarden_save_v2_1',
+    AUTO_SAVE_INTERVAL: 15000,
+    EVENT_CHECK_INTERVAL: 12000,
+    PUZZLE_COOLDOWN: 45000,
+    PUZZLE_CHANCE: 0.06,
     OFFLINE_CAP_HOURS: 8,
     MAX_LEVEL: 30,
-    XP_BASE: 100,
-    XP_EXPONENT: 1.4,
-    UI_UPDATE_FPS: 10,
-    EVENT_DURATION_MIN: 10,         // seconds
-    EVENT_DURATION_MAX: 20,         // seconds
+    XP_BASE: 80,
+    XP_EXPONENT: 1.35,
+    UI_UPDATE_FPS: 8,
+    CLICK_BASE: 1,
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  FLOWER DATABASE
+  //  БАЗА КВІТІВ
   // ═══════════════════════════════════════════════════════════════
   const FLOWERS = {
-    1:  { emoji: '🌱', name: 'Sprout',      rarity: 'common',    clickBonus: 1,  autoBonus: 0,  multiplier: 1 },
-    2:  { emoji: '🌷', name: 'Tulip',       rarity: 'common',    clickBonus: 2,  autoBonus: 0,  multiplier: 1 },
-    3:  { emoji: '🌻', name: 'Sunflower',   rarity: 'common',    clickBonus: 0,  autoBonus: 1,  multiplier: 1 },
-    5:  { emoji: '🌹', name: 'Rose',        rarity: 'uncommon',  clickBonus: 5,  autoBonus: 0,  multiplier: 1 },
-    7:  { emoji: '🌸', name: 'Cherry',      rarity: 'uncommon',  clickBonus: 0,  autoBonus: 3,  multiplier: 1 },
-    10: { emoji: '🪷', name: 'Lotus',       rarity: 'rare',      clickBonus: 0,  autoBonus: 0,  multiplier: 2 },
-    12: { emoji: '🌺', name: 'Hibiscus',    rarity: 'rare',      clickBonus: 0,  autoBonus: 10, multiplier: 1 },
-    15: { emoji: '🌼', name: 'Daisy Chain', rarity: 'epic',      clickBonus: 0,  autoBonus: 0,  multiplier: 3, duration: 30 },
-    18: { emoji: '🌙', name: 'Moonflower',  rarity: 'epic',      clickBonus: 0,  autoBonus: 0,  multiplier: 1.5, nightBonus: true },
-    20: { emoji: '🌈', name: 'Prism Bloom', rarity: 'legendary', clickBonus: 0,  autoBonus: 0,  multiplier: 5 },
-    25: { emoji: '⭐', name: 'Star Lily',   rarity: 'legendary', clickBonus: 0,  autoBonus: 0,  multiplier: 10, duration: 60 },
-    30: { emoji: '💫', name: 'Dream Orchid',rarity: 'mythic',    clickBonus: 0,  autoBonus: 0,  multiplier: 1, prestige: true },
+    1:  { emoji: '🌱', name: 'Паросток',       rarity: 'common',    click: 1,  auto: 0,   mult: 1 },
+    2:  { emoji: '🌷', name: 'Тюльпан',        rarity: 'common',    click: 2,  auto: 0,   mult: 1 },
+    3:  { emoji: '🌻', name: 'Соняшник',       rarity: 'common',    click: 0,  auto: 0.5, mult: 1 },
+    5:  { emoji: '🌹', name: 'Троянда',        rarity: 'uncommon',  click: 4,  auto: 0,   mult: 1 },
+    7:  { emoji: '🌸', name: 'Сакура',         rarity: 'uncommon',  click: 0,  auto: 1.5, mult: 1 },
+    10: { emoji: '🪷', name: 'Лотос',          rarity: 'rare',      click: 0,  auto: 0,   mult: 2 },
+    12: { emoji: '🌺', name: 'Гібіскус',       rarity: 'rare',      click: 0,  auto: 3,   mult: 1 },
+    15: { emoji: '🌼', name: 'Ромашковий лан', rarity: 'epic',      click: 0,  auto: 0,   mult: 3,  duration: 30 },
+    18: { emoji: '🌙', name: 'Місячна квітка', rarity: 'epic',      click: 0,  auto: 0,   mult: 1.5, night: true },
+    20: { emoji: '🌈', name: 'Призмовий цвіт', rarity: 'legendary', click: 0,  auto: 0,   mult: 5 },
+    25: { emoji: '⭐', name: 'Зоряна лілія',   rarity: 'legendary', click: 0,  auto: 0,   mult: 8,  duration: 45 },
+    30: { emoji: '💫', name: 'Мрійлива орхідея', rarity: 'mythic', click: 0,  auto: 0,   mult: 1,  prestige: true },
   };
 
   const GARDEN_STAGES = [
-    '🌱', '🌿', '🪴', '🌷', '🌻', '🌹',
-    '🌸', '🌺', '🌼', '🌙', '🌈', '⭐',
-    '🌳', '🏵️', '🦋', '🌌', '✨', '💫'
+    '🌱','🌿','🪴','🌷','🌻','🌹',
+    '🌸','🌺','🌼','🌙','🌈','⭐',
+    '🌳','🏵️','🦋','🌌','✨','💫'
   ];
 
   // ═══════════════════════════════════════════════════════════════
-  //  BOOSTER DATABASE
+  //  БУСТЕРИ
   // ═══════════════════════════════════════════════════════════════
   const BOOSTERS = {
-    rain:       { emoji: '🌧️', name: 'Rain',        multiplier: 2,  target: 'auto',  duration: 60,  unlockLevel: 5 },
-    sunshine:   { emoji: '☀️', name: 'Sunshine',    multiplier: 3,  target: 'click', duration: 30,  unlockLevel: 8 },
-    rainbow:    { emoji: '🌈', name: 'Rainbow',     multiplier: 2,  target: 'all',   duration: 45,  unlockLevel: 12 },
-    fairyDust:  { emoji: '✨', name: 'Fairy Dust',  multiplier: 5,  target: 'autoClick', duration: 20, unlockLevel: 18 },
-    starfall:   { emoji: '🌟', name: 'Starfall',    multiplier: 5,  target: 'all',   duration: 30,  unlockLevel: 25 },
+    rain:      { emoji: '🌧️', name: 'Дощ',          mult: 2,  target: 'auto',  dur: 60,  unlock: 5 },
+    sunshine:  { emoji: '☀️', name: 'Сонце',        mult: 3,  target: 'click', dur: 30,  unlock: 8 },
+    rainbow:   { emoji: '🌈', name: 'Веселка',      mult: 2,  target: 'all',   dur: 45,  unlock: 12 },
+    fairyDust: { emoji: '✨', name: 'Феєричний пил', mult: 5, target: 'autoClick', dur: 20, unlock: 18 },
+    starfall:  { emoji: '🌟', name: 'Зорепад',      mult: 5,  target: 'all',   dur: 30,  unlock: 25 },
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  EVENT DATABASE
+  //  ПОДІЇ
   // ═══════════════════════════════════════════════════════════════
-  const RANDOM_EVENTS = [
-    { id: 'butterfly',    emoji: '🦋', name: 'Butterfly Visit',   effect: 'click',  value: 1.10, duration: 30 },
-    { id: 'beeSwarm',     emoji: '🐝', name: 'Bee Swarm',         effect: 'auto',   value: 1.20, duration: 45 },
-    { id: 'gentleRain',   emoji: '🌧️', name: 'Gentle Rain',       effect: 'all',    value: 1.50, duration: 60 },
-    { id: 'doubleRainbow',emoji: '🌈', name: 'Double Rainbow',    effect: 'all',    value: 2.00, duration: 30 },
-    { id: 'moonlight',    emoji: '🌙', name: 'Moonlight',         effect: 'all',    value: 1.50, duration: 120 },
-    { id: 'shootingStar', emoji: '💫', name: 'Shooting Star',     effect: 'instant',value: 100,  duration: 0 },
+  const EVENTS = [
+    { id: 'butterfly',  emoji: '🦋', name: 'Метелик',       effect: 'click',  val: 1.15, dur: 30 },
+    { id: 'bee',        emoji: '🐝', name: 'Бджоли',        effect: 'auto',   val: 1.25, dur: 45 },
+    { id: 'rain',       emoji: '🌧️', name: 'Легкий дощ',    effect: 'all',    val: 1.5,  dur: 60 },
+    { id: 'rainbow',    emoji: '🌈', name: 'Подвійна веселка', effect: 'all', val: 2.0,  dur: 30 },
+    { id: 'moon',       emoji: '🌙', name: 'Місячне сяйво', effect: 'all',    val: 1.5,  dur: 120 },
+    { id: 'star',       emoji: '💫', name: 'Падаюча зірка', effect: 'instant',val: 80,   dur: 0 },
   ];
 
   const LEGENDARY_EVENTS = [
-    { id: 'aurora',       emoji: '🌌', name: 'Aurora Bloom',      effect: 'all',    value: 10.0, duration: 120 },
-    { id: 'unicorn',      emoji: '🦄', name: 'Unicorn Visit',     effect: 'reward', value: 1000, duration: 0, xpBonus: 500 },
-    { id: 'meteorShower', emoji: '🌟', name: 'Meteor Shower',     effect: 'autoClick', value: 20, duration: 60 },
+    { id: 'aurora',  emoji: '🌌', name: 'Полярне сяйво', effect: 'all',    val: 10, dur: 120 },
+    { id: 'unicorn', emoji: '🦄', name: 'Єдиноріг',       effect: 'reward', val: 800, dur: 0, xp: 400 },
+    { id: 'meteor',  emoji: '🌟', name: 'Метеоритний дощ', effect: 'autoClick', val: 15, dur: 60 },
   ];
 
   // ═══════════════════════════════════════════════════════════════
-  //  PUZZLE DATABASE
+  //  ПАЗЛИ
   // ═══════════════════════════════════════════════════════════════
-  const PUZZLE_TYPES = {
-    patternMatch: {
-      id: 'patternMatch',
-      name: 'Connect the Flowers',
-      emoji: '🔗',
-      unlockLevel: 1,
-      description: 'Tap matching pairs!',
-    },
-    memoryGarden: {
-      id: 'memoryGarden',
-      name: 'Memory Garden',
-      emoji: '🧠',
-      unlockLevel: 5,
-      description: 'Repeat the sequence!',
-    },
-    flowerPath: {
-      id: 'flowerPath',
-      name: 'Flower Path',
-      emoji: '🛤️',
-      unlockLevel: 10,
-      description: 'Choose the right path!',
-    },
-    logicBloom: {
-      id: 'logicBloom',
-      name: 'Logic Bloom',
-      emoji: '🧩',
-      unlockLevel: 15,
-      description: 'Solve the riddle!',
-    },
+  const PUZZLES = {
+    pattern: { id: 'pattern', name: 'З\'єднай квіти', emoji: '🔗', unlock: 1, desc: 'Знайди однакові пари!' },
+    memory:  { id: 'memory',  name: 'Сад пам\'яті',    emoji: '🧠', unlock: 5, desc: 'Повтори послідовність!' },
+    path:    { id: 'path',    name: 'Квітковий шлях', emoji: '🛤️', unlock: 10, desc: 'Обери правильний шлях!' },
+    logic:   { id: 'logic',   name: 'Логічний цвіт',  emoji: '🧩', unlock: 15, desc: 'Розв\'яжи загадку!' },
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  MISSION TEMPLATES
-  // ═══════════════════════════════════════════════════════════════
-  const MISSION_TEMPLATES = [
-    { id: 'clicks',      text: 'Click {target} times',        target: [50, 100, 200],     rewardCoins: [100, 200, 400] },
-    { id: 'puzzles',     text: 'Complete {target} puzzles',   target: [3, 5, 8],          rewardCoins: [200, 500, 800] },
-    { id: 'growth',      text: 'Grow garden {target} stages', target: [20, 50, 100],      rewardCoins: [150, 400, 700] },
-    { id: 'boosters',    text: 'Use {target} boosters',       target: [2, 3, 5],          rewardCoins: [100, 300, 500] },
-    { id: 'levelUp',     text: 'Reach level {target}',        target: [3, 5, 8],          rewardCoins: [300, 500, 1000] },
-    { id: 'coins',       text: 'Earn {target} coins',         target: [500, 1000, 2000],  rewardCoins: [200, 500, 1000] },
-  ];
-
-  // ═══════════════════════════════════════════════════════════════
-  //  GAME STATE (Single Source of Truth)
+  //  СТАН ГРИ
   // ═══════════════════════════════════════════════════════════════
   let state = {
     coins: 0,
     xp: 0,
     level: 1,
-    totalClicks: 0,
-    totalGrowth: 0,
-    totalCoinsEarned: 0,
-    flowersUnlocked: [1],
-    achievements: [],
+    clicks: 0,
+    growth: 0,
+    earned: 0,
+    unlocked: [1],
     lastOnline: Date.now(),
-    autoGrowthRate: 0,
-    activeBoosts: [],
-    activeEvents: [],
-    streakDays: 0,
-    lastLoginDate: null,
-    dailyMissions: [],
-    dailyMissionsCompleted: 0,
-    puzzlesCompleted: 0,
-    puzzleCooldownEnd: 0,
+    autoRate: 0.2,
+    boosts: [],
+    events: [],
+    streak: 0,
+    lastLogin: null,
+    missions: [],
+    missionsDone: 0,
+    puzzlesDone: 0,
+    puzzleCD: 0,
     puzzleActive: false,
-    inventory: {
-      boosters: {},
-      rareItems: [],
-    },
-    settings: {
-      sound: true,
-      notifications: true,
-    },
-    stats: {
-      highestLevel: 1,
-      longestStreak: 0,
-      totalPuzzles: 0,
-      totalEvents: 0,
-      playTimeMinutes: 0,
-    },
-    // Session-only (not saved)
-    sessionStartTime: Date.now(),
+    inventory: { boosters: {} },
+    stats: { maxLevel: 1, maxStreak: 0, puzzles: 0, events: 0, time: 0 },
+    // session
     lastTick: Date.now(),
-    lastUIUpdate: 0,
-    autoClickInterval: null,
+    lastUI: 0,
+    autoClickTimer: null,
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  UTILITY FUNCTIONS
+  //  УТИЛІТИ
   // ═══════════════════════════════════════════════════════════════
-  function $(sel) { return document.querySelector(sel); }
-  function $$(sel) { return document.querySelectorAll(sel); }
-
+  function $(s) { return document.querySelector(s); }
   function rand(min, max) { return Math.random() * (max - min) + min; }
   function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
-  function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
-
-  function formatNumber(n) {
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  function fmt(n) {
+    if (n >= 1e9) return (n/1e9).toFixed(1) + 'Млрд';
+    if (n >= 1e6) return (n/1e6).toFixed(1) + 'Млн';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'тис';
     return Math.floor(n).toString();
   }
-
-  function getXPRequired(level) {
-    return Math.floor(CONFIG.XP_BASE * Math.pow(level, CONFIG.XP_EXPONENT));
-  }
-
-  function getGardenEmoji(level) {
-    const idx = Math.min(Math.floor((level - 1) / 2), GARDEN_STAGES.length - 1);
+  function xpReq(lvl) { return Math.floor(CONFIG.XP_BASE * Math.pow(lvl, CONFIG.XP_EXPONENT)); }
+  function gardenEmoji(lvl) {
+    const idx = Math.min(Math.floor((lvl - 1) / 2), GARDEN_STAGES.length - 1);
     return GARDEN_STAGES[idx];
   }
-
-  function getCurrentFlower(level) {
-    const levels = Object.keys(FLOWERS).map(Number).sort((a, b) => b - a);
-    for (const l of levels) {
-      if (level >= l) return FLOWERS[l];
-    }
+  function currentFlower(lvl) {
+    const keys = Object.keys(FLOWERS).map(Number).sort((a,b) => b - a);
+    for (const k of keys) if (lvl >= k) return FLOWERS[k];
     return FLOWERS[1];
   }
 
-  function getClickValue() {
-    const flower = getCurrentFlower(state.level);
-    let value = 1 + (state.level * 0.5) + flower.clickBonus;
-
-    // Apply boosters
-    state.activeBoosts.forEach(b => {
-      if (b.target === 'click' || b.target === 'all') {
-        value *= b.multiplier;
-      }
-    });
-
-    // Apply events
-    state.activeEvents.forEach(e => {
-      if (e.effect === 'click' || e.effect === 'all') {
-        value *= e.value;
-      }
-    });
-
-    // Apply flower multiplier
-    value *= flower.multiplier;
-
-    return Math.max(1, value);
-  }
-
-  function getAutoGrowthRate() {
-    const flower = getCurrentFlower(state.level);
-    let rate = state.autoGrowthRate + flower.autoBonus + (state.level * 0.1);
-
-    // Apply boosters
-    state.activeBoosts.forEach(b => {
-      if (b.target === 'auto' || b.target === 'all') {
-        rate *= b.multiplier;
-      }
-    });
-
-    // Apply events
-    state.activeEvents.forEach(e => {
-      if (e.effect === 'auto' || e.effect === 'all') {
-        rate *= e.value;
-      }
-    });
-
-    return Math.max(0, rate);
-  }
-
   // ═══════════════════════════════════════════════════════════════
-  //  SAVE / LOAD SYSTEM
+  //  ЗБЕРЕЖЕННЯ
   // ═══════════════════════════════════════════════════════════════
-  function saveGame() {
-    const saveData = { ...state };
-    delete saveData.sessionStartTime;
-    delete saveData.lastTick;
-    delete saveData.lastUIUpdate;
-    delete saveData.autoClickInterval;
-    delete saveData.puzzleActive;
-    saveData.lastOnline = Date.now();
-    localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(saveData));
+  function save() {
+    const data = JSON.parse(JSON.stringify(state));
+    delete data.lastTick; delete data.lastUI; delete data.autoClickTimer; delete data.puzzleActive;
+    data.lastOnline = Date.now();
+    try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data)); } catch(e) {}
   }
 
-  function loadGame() {
+  function load() {
     try {
-      const saved = localStorage.getItem(CONFIG.SAVE_KEY);
-      if (saved) {
-        const data = JSON.parse(saved);
-        // Merge saved data into state (preserve session-only fields)
-        Object.keys(data).forEach(key => {
-          if (state.hasOwnProperty(key)) {
-            state[key] = data[key];
-          }
-        });
-        processOfflineGains();
-        checkDailyReset();
-      }
-    } catch (e) {
-      console.warn('Save load failed, starting fresh');
-    }
+      const raw = localStorage.getItem(CONFIG.SAVE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      Object.keys(data).forEach(k => { if (state[k] !== undefined) state[k] = data[k]; });
+      offlineGains();
+      dailyReset();
+    } catch(e) { console.warn('Помилка завантаження'); }
   }
 
-  function processOfflineGains() {
+  function offlineGains() {
     const now = Date.now();
-    const offlineMs = now - state.lastOnline;
-    const offlineHours = offlineMs / (1000 * 60 * 60);
-    const cappedHours = Math.min(offlineHours, CONFIG.OFFLINE_CAP_HOURS);
-    const offlineSeconds = cappedHours * 3600;
-
-    if (offlineSeconds > 60 && state.autoGrowthRate > 0) {
-      const rate = getAutoGrowthRate();
-      const earned = Math.floor(rate * offlineSeconds * 0.5);
-      if (earned > 0) {
-        state.coins += earned;
-        state.totalCoinsEarned += earned;
-        showMessage(`🌙 While away: +${formatNumber(earned)} 🪙`);
-      }
+    const hours = Math.min((now - state.lastOnline) / 3600000, CONFIG.OFFLINE_CAP_HOURS);
+    if (hours < 0.05 || state.autoRate <= 0) return;
+    const earned = Math.floor(getAuto() * hours * 3600 * 0.4);
+    if (earned > 0) {
+      state.coins += earned; state.earned += earned;
+      msg(`🌙 Поки тебе не було: +${fmt(earned)} 🪙`);
     }
   }
 
-  function checkDailyReset() {
+  function dailyReset() {
     const today = new Date().toDateString();
-    if (state.lastLoginDate !== today) {
-      const yesterday = new Date(Date.now() - 86400000).toDateString();
-      if (state.lastLoginDate === yesterday) {
-        state.streakDays++;
-        if (state.streakDays > state.stats.longestStreak) {
-          state.stats.longestStreak = state.streakDays;
-        }
-        showMessage(`🔥 Streak: ${state.streakDays} days!`);
-        giveStreakReward();
-      } else if (state.lastLoginDate !== null) {
-        state.streakDays = 1;
-        showMessage('🔥 New streak started!');
-      } else {
-        state.streakDays = 1;
-      }
-      state.lastLoginDate = today;
-      generateDailyMissions();
-      state.dailyMissionsCompleted = 0;
+    if (state.lastLogin === today) return;
+    const yest = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastLogin === yest) {
+      state.streak++;
+      if (state.streak > state.stats.maxStreak) state.stats.maxStreak = state.streak;
+      streakReward();
+    } else if (state.lastLogin) {
+      state.streak = 1;
+      msg('🔥 Новий streak!');
+    } else {
+      state.streak = 1;
     }
+    state.lastLogin = today;
+    genMissions();
+    state.missionsDone = 0;
   }
 
-  function giveStreakReward() {
-    const rewards = [
-      { days: 1,  coins: 100,  item: null },
-      { days: 2,  coins: 200,  item: null },
-      { days: 3,  coins: 300,  item: 'rain' },
-      { days: 5,  coins: 500,  item: 'sunshine' },
-      { days: 7,  coins: 1000, item: 'rainbow' },
-      { days: 14, coins: 2500, item: 'fairyDust' },
-      { days: 30, coins: 10000, item: 'starfall' },
-    ];
-    const reward = rewards.reverse().find(r => state.streakDays >= r.days);
-    if (reward) {
-      state.coins += reward.coins;
-      state.totalCoinsEarned += reward.coins;
-      if (reward.item) {
-        addBoosterToInventory(reward.item, 1);
-        showMessage(`🎁 Streak ${state.streakDays}d: +${formatNumber(reward.coins)}🪙 + ${BOOSTERS[reward.item].emoji}`);
-      } else {
-        showMessage(`🎁 Streak ${state.streakDays}d: +${formatNumber(reward.coins)}🪙`);
-      }
-    }
+  function streakReward() {
+    const rw = [
+      {d:1, c:100}, {d:2, c:200}, {d:3, c:300, b:'rain'},
+      {d:5, c:500, b:'sunshine'}, {d:7, c:1000, b:'rainbow'},
+      {d:14, c:2500, b:'fairyDust'}, {d:30, c:10000, b:'starfall'}
+    ].reverse().find(r => state.streak >= r.d);
+    if (!rw) return;
+    state.coins += rw.c; state.earned += rw.c;
+    if (rw.b) { addInv(rw.b, 1); }
+    msg(`🎁 Streak ${state.streak}д: +${fmt(rw.c)}🪙${rw.b ? ' + ' + BOOSTERS[rw.b].emoji : ''}`);
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  LEVEL SYSTEM
+  //  ЕКОНОМІКА
   // ═══════════════════════════════════════════════════════════════
-  function addXP(amount) {
-    state.xp += amount;
-    const required = getXPRequired(state.level);
-    if (state.xp >= required && state.level < CONFIG.MAX_LEVEL) {
+  function getClick() {
+    const f = currentFlower(state.level);
+    let v = CONFIG.CLICK_BASE + (state.level * 0.4) + f.click;
+    state.boosts.forEach(b => { if (b.target === 'click' || b.target === 'all') v *= b.mult; });
+    state.events.forEach(e => { if (e.effect === 'click' || e.effect === 'all') v *= e.val; });
+    return Math.max(1, v * f.mult);
+  }
+
+  function getAuto() {
+    const f = currentFlower(state.level);
+    let r = state.autoRate + f.auto + (state.level * 0.08);
+    state.boosts.forEach(b => { if (b.target === 'auto' || b.target === 'all') r *= b.mult; });
+    state.events.forEach(e => { if (e.effect === 'auto' || e.effect === 'all') r *= e.val; });
+    return Math.max(0, r);
+  }
+
+  function addCoins(amt, src) {
+    const v = Math.floor(amt);
+    state.coins += v; state.earned += v; state.growth += v;
+    missionProg('coins', v);
+  }
+
+  function addXP(amt) {
+    state.xp += amt;
+    const req = xpReq(state.level);
+    if (state.xp >= req && state.level < CONFIG.MAX_LEVEL) {
+      state.xp -= req;
       levelUp();
     }
-    updateUI();
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  РІВНІ
+  // ═══════════════════════════════════════════════════════════════
   function levelUp() {
-    state.xp -= getXPRequired(state.level);
     state.level++;
-    if (state.level > state.stats.highestLevel) {
-      state.stats.highestLevel = state.level;
-    }
+    if (state.level > state.stats.maxLevel) state.stats.maxLevel = state.level;
+    if (FLOWERS[state.level] && !state.unlocked.includes(state.level)) state.unlocked.push(state.level);
+    if (state.level === 5) { state.autoRate = 1; msg('🌹 Auto-ріст розблоковано!'); }
 
-    // Unlock flower
-    if (FLOWERS[state.level]) {
-      if (!state.flowersUnlocked.includes(state.level)) {
-        state.flowersUnlocked.push(state.level);
-      }
-    }
+    const rw = { coins: 40 * state.level, xp: 20 * state.level, epic: state.level % 5 === 0 };
+    state.coins += rw.coins; state.earned += rw.coins;
 
-    // Auto-growth unlock at L5
-    if (state.level === 5) {
-      state.autoGrowthRate = 1;
-      showMessage('🌹 Auto-Growth unlocked!');
-    }
-
-    // Give level reward
-    const reward = getLevelReward(state.level);
-    state.coins += reward.coins;
-    state.totalCoinsEarned += reward.coins;
-
-    // Show epic notification for milestone levels
-    if (state.level % 5 === 0) {
-      showEpicLevelUp(state.level, reward);
-      if (reward.booster) {
-        addBoosterToInventory(reward.booster, 1);
-      }
+    if (rw.epic) {
+      const bMap = {5:'rain', 10:'sunshine', 15:'rainbow', 20:'fairyDust', 25:'starfall', 30:'starfall'};
+      if (bMap[state.level]) addInv(bMap[state.level], 1);
+      epicModal(state.level, rw);
     } else {
-      showMessage(`⭐ Level ${state.level}! +${formatNumber(reward.coins)}🪙`);
+      msg(`⭐ Рівень ${state.level}! +${fmt(rw.coins)}🪙`);
     }
 
-    // Trigger puzzle on level up
-    setTimeout(() => triggerPuzzle('levelup'), 1000);
-
-    saveGame();
-    updateUI();
+    setTimeout(() => tryPuzzle('levelup'), 1200);
+    save(); updateUI();
   }
 
-  function getLevelReward(level) {
-    const isEpic = level % 5 === 0;
-    const isRare = level % 3 === 0;
-    return {
-      coins: 50 * level,
-      xp: 25 * level,
-      rarity: isEpic ? 'epic' : (isRare ? 'rare' : 'common'),
-      booster: isEpic ? getEpicBoosterForLevel(level) : null,
+  function epicModal(lvl, rw) {
+    const texts = {
+      5: 'Auto-ріст розблоковано! Сад росте, поки ти спиш.',
+      10: 'Пазл "Сад пам\'яті" відкрито! Тренуй мозок.',
+      15: 'Пазл "Квітковий шлях" відкрито! Обери мудро.',
+      20: 'Легендарні події! Рідкісні чудеса чекають.',
+      25: 'Зоряна лілія розквітла! Твій сад сяє.',
+      30: 'Мрійлива орхідея! Престиж відкрито...'
     };
-  }
+    const bMap = {5:'rain', 10:'sunshine', 15:'rainbow', 20:'fairyDust', 25:'starfall', 30:'starfall'};
+    const b = bMap[lvl] ? BOOSTERS[bMap[lvl]] : null;
 
-  function getEpicBoosterForLevel(level) {
-    const map = { 5: 'rain', 10: 'sunshine', 15: 'rainbow', 20: 'fairyDust', 25: 'starfall', 30: 'starfall' };
-    return map[level] || null;
+    const el = document.createElement('div');
+    el.className = 'epic-overlay';
+    el.innerHTML = `
+      <div class="epic-modal">
+        <div class="epic-emoji">🎁</div>
+        <h2>ЕПІЧНИЙ РІВЕНЬ ${lvl}!</h2>
+        <p class="epic-reward">+${fmt(rw.coins)} 🪙</p>
+        ${b ? `<p class="epic-booster">${b.emoji} ${b.name} отримано!</p>` : ''}
+        <p class="epic-hint">${texts[lvl] || 'Новий вміст відкрито!'}</p>
+        <button class="big-button" id="epic-close">Забрати!</button>
+      </div>`;
+    document.body.appendChild(el);
+    $('#epic-close').onclick = () => el.remove();
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  COIN & GROWTH SYSTEM
+  //  КЛІКИ
   // ═══════════════════════════════════════════════════════════════
-  function addCoins(amount, source = 'click') {
-    const val = Math.floor(amount);
-    state.coins += val;
-    state.totalCoinsEarned += val;
-    state.totalGrowth += val;
+  function onGardenClick(e) {
+    state.clicks++;
+    const val = getClick();
+    addCoins(val, 'click');
+    missionProg('clicks', 1);
 
-    // Check mission progress
-    checkMissionProgress('coins', val);
+    const g = $('.garden');
+    if (g) { g.style.transform = 'scale(0.9)'; setTimeout(() => g.style.transform = '', 120); }
 
-    // Floating text effect
-    if (source === 'click') {
-      createFloatingText(`+${formatNumber(val)}`, event);
+    spawnParticles(e);
+    floatText(`+${fmt(val)}`, e);
+    save(); updateUI();
+  }
+
+  function onGrowBtnClick(e) {
+    // Те саме, але з кнопки
+    state.clicks++;
+    const val = getClick();
+    addCoins(val, 'click');
+    missionProg('clicks', 1);
+
+    // Анімація кнопки
+    const btn = $('#grow-btn');
+    if (btn) { btn.style.transform = 'scale(0.95)'; setTimeout(() => btn.style.transform = '', 120); }
+
+    // Частинки з центру
+    const fakeE = { clientX: window.innerWidth/2, clientY: window.innerHeight/2 };
+    spawnParticles(fakeE);
+    floatText(`+${fmt(val)}`, fakeE);
+    save(); updateUI();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ВІЗУАЛЬНІ ЕФЕКТИ
+  // ═══════════════════════════════════════════════════════════════
+  function floatText(text, e) {
+    const el = document.createElement('div');
+    el.className = 'floating-text';
+    el.textContent = text;
+    const x = e && e.clientX ? e.clientX : window.innerWidth / 2;
+    const y = e && e.clientY ? e.clientY : window.innerHeight / 2;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  }
+
+  function spawnParticles(e) {
+    const x = e && e.clientX ? e.clientX : window.innerWidth / 2;
+    const y = e && e.clientY ? e.clientY : window.innerHeight / 2;
+    const emojis = ['✨','🌸','🌿','💫','🪙','🌷'];
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.textContent = emojis[randInt(0, emojis.length - 1)];
+      const tx = rand(-50, 50), ty = rand(-60, -20);
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      p.style.setProperty('--tx', tx + 'px');
+      p.style.setProperty('--ty', ty + 'px');
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 700);
     }
   }
 
-  function handleGardenClick(e) {
-    state.totalClicks++;
-    const value = getClickValue();
-    addCoins(value, 'click');
+  function msg(text) {
+    const el = $('#message');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove('hidden');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.add('hidden'), 3000);
+  }
 
-    // Visual feedback
-    const garden = $('.garden');
-    if (garden) {
-      garden.style.transform = 'scale(0.92)';
-      setTimeout(() => garden.style.transform = '', 100);
-    }
-
-    // Particles
-    spawnParticles(e.clientX, e.clientY);
-
-    // Check mission
-    checkMissionProgress('clicks', 1);
-
-    updateUI();
-    saveGame();
+  function toast(eventDef, legendary) {
+    const el = document.createElement('div');
+    el.className = 'event-toast' + (legendary ? ' legendary' : '');
+    el.innerHTML = `${eventDef.emoji} <span>${eventDef.name}</span>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3500);
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  BOOSTER SYSTEM
+  //  БУСТЕРИ
   // ═══════════════════════════════════════════════════════════════
-  function addBoosterToInventory(type, count) {
-    state.inventory.boosters[type] = (state.inventory.boosters[type] || 0) + count;
+  function addInv(type, n) {
+    state.inventory.boosters[type] = (state.inventory.boosters[type] || 0) + n;
     updateUI();
   }
 
   function useBooster(type) {
-    const boosterDef = BOOSTERS[type];
-    if (!boosterDef) return;
-    if (state.level < boosterDef.unlockLevel) {
-      showMessage('🔒 Unlock at level ' + boosterDef.unlockLevel);
-      return;
-    }
-    if (!state.inventory.boosters[type] || state.inventory.boosters[type] <= 0) {
-      showMessage('❌ No ' + boosterDef.emoji + ' left!');
-      return;
-    }
+    const def = BOOSTERS[type];
+    if (!def) return;
+    if (state.level < def.unlock) { msg('🔒 Потрібен рівень ' + def.unlock); return; }
+    if (!state.inventory.boosters[type] || state.inventory.boosters[type] <= 0) { msg('❌ Немає ' + def.emoji); return; }
 
     state.inventory.boosters[type]--;
+    state.boosts.push({ type, emoji: def.emoji, name: def.name, mult: def.mult, target: def.target, end: Date.now() + def.dur * 1000 });
 
-    const booster = {
-      type: type,
-      emoji: boosterDef.emoji,
-      name: boosterDef.name,
-      multiplier: boosterDef.multiplier,
-      target: boosterDef.target,
-      endTime: Date.now() + (boosterDef.duration * 1000),
-    };
-
-    state.activeBoosts.push(booster);
-
-    // Auto-click booster special handling
-    if (boosterDef.target === 'autoClick') {
-      startAutoClick(boosterDef.multiplier);
-    }
-
-    showMessage(`${boosterDef.emoji} ${boosterDef.name} activated!`);
-    checkMissionProgress('boosters', 1);
-    updateUI();
-    saveGame();
+    if (def.target === 'autoClick') startAutoClick(def.mult);
+    msg(`${def.emoji} ${def.name} активовано!`);
+    missionProg('boosters', 1);
+    save(); updateUI();
   }
 
-  function startAutoClick(clicksPerSec) {
-    if (state.autoClickInterval) clearInterval(state.autoClickInterval);
-    state.autoClickInterval = setInterval(() => {
-      const value = getClickValue();
-      addCoins(value, 'auto');
+  function startAutoClick(cps) {
+    if (state.autoClickTimer) clearInterval(state.autoClickTimer);
+    state.autoClickTimer = setInterval(() => {
+      const v = getClick();
+      addCoins(v, 'auto');
       updateUI();
-    }, 1000 / clicksPerSec);
+    }, 1000 / cps);
   }
 
   function stopAutoClick() {
-    if (state.autoClickInterval) {
-      clearInterval(state.autoClickInterval);
-      state.autoClickInterval = null;
-    }
+    if (state.autoClickTimer) { clearInterval(state.autoClickTimer); state.autoClickTimer = null; }
   }
 
-  function updateBoosters() {
+  function updateBoosts() {
     const now = Date.now();
-    const before = state.activeBoosts.length;
-    state.activeBoosts = state.activeBoosts.filter(b => b.endTime > now);
-    if (before > state.activeBoosts.length) {
-      // A booster expired
-      stopAutoClick();
-      updateUI();
-    }
+    const before = state.boosts.length;
+    state.boosts = state.boosts.filter(b => b.end > now);
+    if (before > state.boosts.length) { stopAutoClick(); updateUI(); }
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  EVENT SYSTEM
+  //  ПОДІЇ
   // ═══════════════════════════════════════════════════════════════
-  function checkRandomEvent() {
-    if (Math.random() > 0.15) return; // 15% chance
+  function checkEvent() {
+    if (Math.random() > 0.12) return;
+    if (state.level >= 25 && Math.random() < 0.008) { triggerLegendary(); return; }
 
-    const now = Date.now();
+    const def = EVENTS[randInt(0, EVENTS.length - 1)];
+    const ev = { ...def, end: Date.now() + def.dur * 1000 };
+    state.events.push(ev);
+    state.stats.events++;
+    toast(def);
 
-    // Legendary event chance (L25+)
-    if (state.level >= 25 && Math.random() < 0.01) {
-      triggerLegendaryEvent();
-      return;
-    }
-
-    const eventDef = RANDOM_EVENTS[randInt(0, RANDOM_EVENTS.length - 1)];
-    const event = {
-      ...eventDef,
-      endTime: now + (eventDef.duration * 1000),
-    };
-
-    state.activeEvents.push(event);
-    state.stats.totalEvents++;
-
-    showEventToast(event);
-
-    // Instant rewards
-    if (event.effect === 'instant') {
-      state.coins += event.value;
-      state.totalCoinsEarned += event.value;
-    }
-    if (event.effect === 'reward') {
-      state.coins += event.value;
-      state.totalCoinsEarned += event.value;
-      if (event.xpBonus) addXP(event.xpBonus);
-    }
-
-    saveGame();
-    updateUI();
+    if (def.effect === 'instant') { state.coins += def.val; state.earned += def.val; }
+    save(); updateUI();
   }
 
-  function triggerLegendaryEvent() {
-    const eventDef = LEGENDARY_EVENTS[randInt(0, LEGENDARY_EVENTS.length - 1)];
-    const event = {
-      ...eventDef,
-      endTime: Date.now() + (eventDef.duration * 1000),
-    };
-    state.activeEvents.push(event);
-    state.stats.totalEvents++;
-    showEventToast(event, true);
-    showMessage(`👑 LEGENDARY: ${eventDef.name}!`);
-    saveGame();
-    updateUI();
+  function triggerLegendary() {
+    const def = LEGENDARY_EVENTS[randInt(0, LEGENDARY_EVENTS.length - 1)];
+    const ev = { ...def, end: Date.now() + def.dur * 1000 };
+    state.events.push(ev);
+    state.stats.events++;
+    toast(def, true);
+    msg(`👑 ЛЕГЕНДАРНО: ${def.name}!`);
+    if (def.effect === 'reward') { state.coins += def.val; state.earned += def.val; if (def.xp) addXP(def.xp); }
+    save(); updateUI();
   }
 
   function updateEvents() {
     const now = Date.now();
-    const before = state.activeEvents.length;
-    state.activeEvents = state.activeEvents.filter(e => e.endTime > now);
-    if (before > state.activeEvents.length) {
-      updateUI();
-    }
-  }
-
-  function showEventToast(event, isLegendary = false) {
-    const toast = document.createElement('div');
-    toast.className = 'event-toast' + (isLegendary ? ' legendary' : '');
-    toast.innerHTML = `${event.emoji} <span>${event.name}</span>`;
-    document.body.appendChild(toast);
-
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    const before = state.events.length;
+    state.events = state.events.filter(e => e.end > now);
+    if (before > state.events.length) updateUI();
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  PUZZLE SYSTEM
+  //  ПАЗЛИ
   // ═══════════════════════════════════════════════════════════════
-  function canTriggerPuzzle() {
-    return !state.puzzleActive && Date.now() > state.puzzleCooldownEnd;
-  }
+  function canPuzzle() { return !state.puzzleActive && Date.now() > state.puzzleCD; }
 
-  function triggerPuzzle(source = 'random') {
-    if (!canTriggerPuzzle()) return;
-
-    // Pick available puzzle type based on level
-    const available = Object.values(PUZZLE_TYPES).filter(p => state.level >= p.unlockLevel);
-    if (available.length === 0) return;
-
-    const puzzleType = available[randInt(0, available.length - 1)];
+  function tryPuzzle(src) {
+    if (!canPuzzle()) return;
+    const avail = Object.values(PUZZLES).filter(p => state.level >= p.unlock);
+    if (avail.length === 0) return;
+    const type = avail[randInt(0, avail.length - 1)];
     state.puzzleActive = true;
-    state.puzzleCooldownEnd = Date.now() + CONFIG.PUZZLE_COOLDOWN;
+    state.puzzleCD = Date.now() + CONFIG.PUZZLE_COOLDOWN;
 
-    switch (puzzleType.id) {
-      case 'patternMatch': startPatternMatch(); break;
-      case 'memoryGarden': startMemoryGarden(); break;
-      case 'flowerPath': startFlowerPath(); break;
-      case 'logicBloom': startLogicBloom(); break;
+    switch (type.id) {
+      case 'pattern': puzzlePattern(); break;
+      case 'memory': puzzleMemory(); break;
+      case 'path': puzzlePath(); break;
+      case 'logic': puzzleLogic(); break;
     }
-
-    saveGame();
+    save();
   }
 
-  // ── Pattern Match Puzzle ──
-  function startPatternMatch() {
-    const pairsCount = Math.min(3 + Math.floor(state.level / 5), 5);
+  function puzzleOverlay(title, subtitle) {
+    const ov = document.createElement('div');
+    ov.className = 'puzzle-overlay';
+    const md = document.createElement('div');
+    md.className = 'puzzle-modal panel';
+    md.innerHTML = `<div class="puzzle-header"><h3>${title}</h3><p>${subtitle}</p></div>`;
+    const content = document.createElement('div');
+    content.className = 'puzzle-content';
+    md.appendChild(content);
+    ov.appendChild(md);
+    ov.onclick = (e) => { if (e.target === ov) { ov.remove(); state.puzzleActive = false; } };
+    document.body.appendChild(ov);
+    return { overlay: ov, content: content };
+  }
+
+  // ── Pattern Match ──
+  function puzzlePattern() {
+    const pairs = Math.min(3 + Math.floor(state.level / 5), 5);
     const flowers = ['🌷','🌻','🌹','🌸','🌺','🌼','🪷','🌱'];
-    const selected = flowers.slice(0, pairsCount);
+    const selected = flowers.slice(0, pairs);
     const grid = [...selected, ...selected].sort(() => Math.random() - 0.5);
+    let revealed = [], matched = [], moves = 0;
+    const maxMoves = pairs * 3;
 
-    let revealed = [];
-    let matched = [];
-    let moves = 0;
-    const maxMoves = pairsCount * 3;
-
-    const modal = createPuzzleModal('🔗 Connect the Flowers', 'Tap matching pairs!');
+    const { content } = puzzleOverlay('🔗 З\'єднай квіти', 'Знайди однакові пари!');
     const gridEl = document.createElement('div');
     gridEl.className = 'puzzle-grid';
 
     grid.forEach((emoji, idx) => {
       const cell = document.createElement('div');
       cell.className = 'puzzle-cell';
-      cell.dataset.idx = idx;
-      cell.dataset.emoji = emoji;
       cell.textContent = '❓';
       cell.onclick = () => {
         if (matched.includes(idx) || revealed.includes(idx)) return;
-
         cell.textContent = emoji;
         cell.classList.add('revealed');
         revealed.push(idx);
@@ -664,54 +516,39 @@
           const [i1, i2] = revealed;
           if (grid[i1] === grid[i2]) {
             matched.push(i1, i2);
-            cell.classList.add('matched');
-            const other = gridEl.children[i2];
-            other.classList.add('matched');
+            [i1, i2].forEach(i => gridEl.children[i].classList.add('matched'));
             revealed = [];
-
             if (matched.length === grid.length) {
-              completePuzzle('patternMatch', { moves, maxMoves });
+              setTimeout(() => finishPuzzle('pattern', { moves, maxMoves, pairs }), 400);
             }
           } else {
             setTimeout(() => {
-              gridEl.children[i1].textContent = '❓';
-              gridEl.children[i1].classList.remove('revealed');
-              gridEl.children[i2].textContent = '❓';
-              gridEl.children[i2].classList.remove('revealed');
+              [i1, i2].forEach(i => { gridEl.children[i].textContent = '❓'; gridEl.children[i].classList.remove('revealed'); });
               revealed = [];
             }, 600);
           }
-
           if (moves >= maxMoves && matched.length < grid.length) {
-            setTimeout(() => {
-              closePuzzleModal();
-              showMessage('😔 Puzzle failed. Try again later!');
-              state.puzzleActive = false;
-            }, 500);
+            setTimeout(() => { closePuzzle(); msg('😔 Не вдалося. Спробуй пізніше!'); state.puzzleActive = false; }, 600);
           }
         }
       };
       gridEl.appendChild(cell);
     });
-
-    modal.content.appendChild(gridEl);
-    document.body.appendChild(modal.el);
+    content.appendChild(gridEl);
   }
 
-  // ── Memory Garden Puzzle ──
-  function startMemoryGarden() {
-    const sequenceLength = Math.min(3 + Math.floor(state.level / 4), 6);
+  // ── Memory ──
+  function puzzleMemory() {
+    const len = Math.min(3 + Math.floor(state.level / 4), 6);
     const flowers = ['🌷','🌻','🌹','🌸','🌺','🌼'];
-    const sequence = [];
-    for (let i = 0; i < sequenceLength; i++) {
-      sequence.push(flowers[randInt(0, flowers.length - 1)]);
-    }
+    const seq = [];
+    for (let i = 0; i < len; i++) seq.push(flowers[randInt(0, flowers.length - 1)]);
 
-    const modal = createPuzzleModal('🧠 Memory Garden', 'Watch & repeat!');
+    const { content } = puzzleOverlay('🧠 Сад пам\'яті', 'Дивись уважно та повтори!');
     const display = document.createElement('div');
     display.className = 'memory-display';
     display.textContent = '👀';
-    modal.content.appendChild(display);
+    content.appendChild(display);
 
     const inputRow = document.createElement('div');
     inputRow.className = 'memory-inputs';
@@ -722,118 +559,90 @@
       btn.textContent = f;
       inputRow.appendChild(btn);
     });
-    modal.content.appendChild(inputRow);
+    content.appendChild(inputRow);
 
-    let playerSequence = [];
-    let showingSequence = true;
-
-    // Show sequence
+    let player = [], showing = true;
     let step = 0;
-    const showInterval = setInterval(() => {
-      if (step < sequence.length) {
-        display.textContent = sequence[step];
+    const interval = setInterval(() => {
+      if (step < seq.length) {
+        display.textContent = seq[step];
         display.style.transform = 'scale(1.3)';
-        setTimeout(() => display.style.transform = 'scale(1)', 300);
+        setTimeout(() => display.style.transform = 'scale(1)', 250);
         step++;
       } else {
-        clearInterval(showInterval);
-        display.textContent = '❓ Your turn!';
+        clearInterval(interval);
+        display.textContent = '❓ Твоя черга!';
         inputRow.style.display = 'flex';
-        showingSequence = false;
-
-        // Enable input
+        showing = false;
         inputRow.querySelectorAll('.memory-btn').forEach(btn => {
           btn.onclick = () => {
-            if (showingSequence) return;
+            if (showing) return;
             const chosen = btn.textContent;
-            playerSequence.push(chosen);
-
-            // Visual feedback
+            player.push(chosen);
             display.textContent = chosen;
-
-            if (playerSequence[playerSequence.length - 1] !== sequence[playerSequence.length - 1]) {
-              display.textContent = '❌ Wrong!';
-              setTimeout(() => {
-                closePuzzleModal();
-                showMessage('😔 Wrong sequence!');
-                state.puzzleActive = false;
-              }, 800);
+            if (player[player.length - 1] !== seq[player.length - 1]) {
+              display.textContent = '❌ Неправильно!';
+              setTimeout(() => { closePuzzle(); msg('😔 Неправильна послідовність!'); state.puzzleActive = false; }, 700);
               return;
             }
-
-            if (playerSequence.length === sequence.length) {
-              completePuzzle('memoryGarden', { sequenceLength });
+            if (player.length === seq.length) {
+              setTimeout(() => finishPuzzle('memory', { len }), 400);
             }
           };
         });
       }
-    }, 800);
-
-    document.body.appendChild(modal.el);
+    }, 700);
   }
 
-  // ── Flower Path Puzzle ──
-  function startFlowerPath() {
-    const modal = createPuzzleModal('🛤️ Flower Path', 'Choose the golden path!');
-
-    const pathsContainer = document.createElement('div');
-    pathsContainer.className = 'paths-container';
-
-    const correctPath = randInt(0, 2);
-    const pathEmojis = [['🌿','🌸','🌺'], ['🍂','🥀','🍁'], ['🌾','🌻','🏵️']];
+  // ── Path ──
+  function puzzlePath() {
+    const { content } = puzzleOverlay('🛤️ Квітковий шлях', 'Обери золотий шлях!');
+    const correct = randInt(0, 2);
+    const paths = [['🌿','🌸','🌺'], ['🍂','🥀','🍁'], ['🌾','🌻','🏵️']];
+    const container = document.createElement('div');
+    container.className = 'paths-container';
 
     for (let i = 0; i < 3; i++) {
       const path = document.createElement('div');
       path.className = 'flower-path';
-      path.innerHTML = pathEmojis[i].map(e => `<span>${e}</span>`).join('');
+      path.innerHTML = paths[i].map(e => `<span>${e}</span>`).join('');
       path.onclick = () => {
-        if (i === correctPath) {
+        if (i === correct) {
           path.style.borderColor = '#7ad7ff';
-          completePuzzle('flowerPath', { correct: true });
+          finishPuzzle('path', { correct: true });
         } else {
           path.style.borderColor = '#ff8cc6';
           path.style.opacity = '0.5';
-          showMessage('😔 Wrong path! Small reward...');
-          const smallReward = 20 * state.level;
-          state.coins += smallReward;
-          setTimeout(() => {
-            closePuzzleModal();
-            state.puzzleActive = false;
-          }, 800);
+          const small = 15 * state.level;
+          state.coins += small;
+          msg(`😔 Неправильно... +${fmt(small)}🪙`);
+          setTimeout(() => { closePuzzle(); state.puzzleActive = false; }, 700);
         }
       };
-      pathsContainer.appendChild(path);
+      container.appendChild(path);
     }
-
-    modal.content.appendChild(pathsContainer);
-    document.body.appendChild(modal.el);
+    content.appendChild(container);
   }
 
-  // ── Logic Bloom Puzzle ──
-  function startLogicBloom() {
+  // ── Logic ──
+  function puzzleLogic() {
     const flowers = [
-      { emoji: '🌹', name: 'Rose', color: 'red' },
-      { emoji: '🌷', name: 'Tulip', color: 'pink' },
-      { emoji: '🌻', name: 'Sunflower', color: 'yellow' },
-      { emoji: '🌸', name: 'Cherry', color: 'white' },
+      { emoji: '🌹', name: 'Троянда', color: 'червоні' },
+      { emoji: '🌷', name: 'Тюльпан', color: 'рожеві' },
+      { emoji: '🌻', name: 'Соняшник', color: 'жовті' },
+      { emoji: '🌸', name: 'Сакура', color: 'білі' },
     ];
-
     const correct = randInt(0, 3);
-    const clues = generateClues(flowers, correct);
+    const clues = genClues(flowers, correct);
 
-    const modal = createPuzzleModal('🧩 Logic Bloom', 'Find the thirsty flower!');
-
+    const { content } = puzzleOverlay('🧩 Логічний цвіт', 'Знайди квітку, якій потрібна вода!');
     const cluesEl = document.createElement('div');
     cluesEl.className = 'logic-clues';
-    clues.forEach(clue => {
-      const p = document.createElement('p');
-      p.textContent = '💡 ' + clue;
-      cluesEl.appendChild(p);
-    });
-    modal.content.appendChild(cluesEl);
+    clues.forEach(c => { const p = document.createElement('p'); p.textContent = '💡 ' + c; cluesEl.appendChild(p); });
+    content.appendChild(cluesEl);
 
-    const options = document.createElement('div');
-    options.className = 'logic-options';
+    const opts = document.createElement('div');
+    opts.className = 'logic-options';
     flowers.forEach((f, i) => {
       const btn = document.createElement('button');
       btn.className = 'logic-btn';
@@ -841,494 +650,374 @@
       btn.onclick = () => {
         if (i === correct) {
           btn.style.background = 'linear-gradient(135deg, #7ad7ff, #a18cd1)';
-          completePuzzle('logicBloom', { correct: true });
+          finishPuzzle('logic', { correct: true });
         } else {
           btn.style.background = 'linear-gradient(135deg, #ff8cc6, #ff6b9d)';
           btn.style.opacity = '0.5';
-          showMessage('😔 Not this one!');
-          setTimeout(() => {
-            closePuzzleModal();
-            state.puzzleActive = false;
-          }, 800);
+          msg('😔 Не ця квітка...');
+          setTimeout(() => { closePuzzle(); state.puzzleActive = false; }, 700);
         }
       };
-      options.appendChild(btn);
+      opts.appendChild(btn);
     });
-    modal.content.appendChild(options);
-
-    document.body.appendChild(modal.el);
+    content.appendChild(opts);
   }
 
-  function generateClues(flowers, correctIdx) {
-    const clues = [];
-    const correctFlower = flowers[correctIdx];
-
-    // Clue 1: Color hint
-    const colors = { red: 'red petals', pink: 'pink petals', yellow: 'golden petals', white: 'white petals' };
-    clues.push(`It has ${colors[correctFlower.color]}.`);
-
-    // Clue 2: Position hint
-    const positions = ['first', 'second', 'third', 'last'];
-    clues.push(`It is ${correctIdx === 0 ? 'not the last' : 'not the first'} flower.`);
-
-    // Clue 3: Elimination
-    const wrongFlower = flowers.find((f, i) => i !== correctIdx);
-    clues.push(`It is not the ${wrongFlower.name}.`);
-
-    return clues;
+  function genClues(flowers, correct) {
+    const c = flowers[correct];
+    const wrong = flowers.find((f, i) => i !== correct);
+    return [
+      `У неї ${c.color} пелюстки.`,
+      `Це не ${wrong.name.toLowerCase()}.`,
+      correct === 0 ? 'Вона перша у списку.' : 'Вона не перша у списку.'
+    ];
   }
 
-  // ── Puzzle Helpers ──
-  function createPuzzleModal(title, subtitle) {
-    const overlay = document.createElement('div');
-    overlay.className = 'puzzle-overlay';
-
-    const modal = document.createElement('div');
-    modal.className = 'puzzle-modal panel';
-
-    const header = document.createElement('div');
-    header.className = 'puzzle-header';
-    header.innerHTML = `<h3>${title}</h3><p>${subtitle}</p>`;
-    modal.appendChild(header);
-
-    const content = document.createElement('div');
-    content.className = 'puzzle-content';
-    modal.appendChild(content);
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    // Close on overlay click
-    overlay.onclick = (e) => {
-      if (e.target === overlay) {
-        closePuzzleModal();
-        state.puzzleActive = false;
-      }
-    };
-
-    return { el: overlay, content: content };
+  function closePuzzle() {
+    const ov = $('.puzzle-overlay');
+    if (ov) ov.remove();
   }
 
-  function closePuzzleModal() {
-    const overlay = $('.puzzle-overlay');
-    if (overlay) overlay.remove();
-  }
+  function finishPuzzle(type, data) {
+    state.puzzlesDone++;
+    state.stats.puzzles++;
+    let coins = 20 * state.level;
+    let xp = 10 * state.level;
+    if (type === 'memory') { coins = 5 * data.len * state.level; }
+    if (type === 'logic') { coins = 25 * state.level; xp = 20 * state.level; }
 
-  function completePuzzle(type, data) {
-    state.puzzlesCompleted++;
-    state.stats.totalPuzzles++;
+    state.coins += coins; state.earned += coins;
+    addXP(xp);
+    missionProg('puzzles', 1);
 
-    const baseReward = 20 * state.level;
-    const xpReward = 10 * state.level;
-    let coinReward = baseReward;
-
-    if (type === 'memoryGarden') {
-      coinReward = 5 * data.sequenceLength * state.level;
-    } else if (type === 'logicBloom') {
-      coinReward = 25 * state.level;
-    }
-
-    state.coins += coinReward;
-    state.totalCoinsEarned += coinReward;
-    addXP(xpReward);
-
-    checkMissionProgress('puzzles', 1);
-
-    // Show reward
-    const modal = $('.puzzle-modal');
-    if (modal) {
-      modal.innerHTML = `
+    const ov = $('.puzzle-overlay');
+    if (ov) {
+      ov.querySelector('.puzzle-modal').innerHTML = `
         <div class="puzzle-reward">
           <div class="reward-emoji">🎉</div>
-          <h3>Puzzle Solved!</h3>
-          <p>+${formatNumber(coinReward)} 🪙</p>
-          <p>+${formatNumber(xpReward)} ✨ XP</p>
-          <button class="big-button" onclick="this.closest('.puzzle-overlay').remove(); window.DreamGarden.puzzleActive = false;">Awesome!</button>
-        </div>
-      `;
+          <h3>Пазл вирішено!</h3>
+          <p>+${fmt(coins)} 🪙</p>
+          <p>+${fmt(xp)} ✨ досвіду</p>
+          <button class="big-button" id="puzzle-ok">Круто!</button>
+        </div>`;
+      $('#puzzle-ok').onclick = () => { ov.remove(); state.puzzleActive = false; };
     }
-
-    saveGame();
-    updateUI();
+    save(); updateUI();
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  DAILY MISSIONS
+  //  МІСІЇ
   // ═══════════════════════════════════════════════════════════════
-  function generateDailyMissions() {
-    state.dailyMissions = [];
-    const shuffled = [...MISSION_TEMPLATES].sort(() => Math.random() - 0.5);
+  const MISSION_TEMPLATES = [
+    { id: 'clicks',  text: 'Клікни {t} разів',      t: [30, 60, 100],    c: [80, 150, 250] },
+    { id: 'puzzles', text: 'Виріши {t} пазлів',     t: [2, 4, 6],       c: [150, 350, 600] },
+    { id: 'growth',  text: 'Накопичи {t} росту',    t: [100, 300, 500],  c: [100, 300, 500] },
+    { id: 'boosters',text: 'Використай {t} бустерів', t: [1, 2, 3],      c: [80, 200, 400] },
+    { id: 'levelUp', text: 'Досягни рівня {t}',     t: [3, 5, 8],       c: [200, 400, 800] },
+    { id: 'coins',   text: 'Зароби {t} монет',      t: [300, 800, 1500], c: [150, 400, 700] },
+  ];
 
+  function genMissions() {
+    state.missions = [];
+    const shuffled = [...MISSION_TEMPLATES].sort(() => Math.random() - 0.5);
     for (let i = 0; i < 3; i++) {
-      const template = shuffled[i];
-      const tier = randInt(0, template.target.length - 1);
-      state.dailyMissions.push({
-        id: template.id + '_' + Date.now() + '_' + i,
-        text: template.text.replace('{target}', template.target[tier]),
-        target: template.target[tier],
-        progress: 0,
-        rewardCoins: template.rewardCoins[tier],
-        completed: false,
+      const t = shuffled[i];
+      const tier = randInt(0, t.t.length - 1);
+      state.missions.push({
+        id: t.id + '_' + Date.now() + i,
+        text: t.text.replace('{t}', t.t[tier]),
+        target: t.t[tier],
+        prog: 0,
+        reward: t.c[tier],
+        done: false,
       });
     }
   }
 
-  function checkMissionProgress(type, amount) {
-    state.dailyMissions.forEach(mission => {
-      if (mission.completed) return;
-      if (mission.id.startsWith(type)) {
-        mission.progress += amount;
-        if (mission.progress >= mission.target) {
-          mission.completed = true;
-          state.coins += mission.rewardCoins;
-          state.totalCoinsEarned += mission.rewardCoins;
-          state.dailyMissionsCompleted++;
-          showMessage(`📋 Mission complete! +${formatNumber(mission.rewardCoins)}🪙`);
-          saveGame();
-        }
+  function missionProg(type, amt) {
+    state.missions.forEach(m => {
+      if (m.done || !m.id.startsWith(type)) return;
+      m.prog += amt;
+      if (m.prog >= m.target) {
+        m.done = true;
+        state.coins += m.reward; state.earned += m.reward;
+        state.missionsDone++;
+        msg(`📋 Місія виконана! +${fmt(m.reward)}🪙`);
+        save();
       }
     });
     updateUI();
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  UI UPDATES
+  //  UI ОНОВЛЕННЯ
   // ═══════════════════════════════════════════════════════════════
   function updateUI() {
     const now = Date.now();
+    if (now - state.lastUI < (1000 / CONFIG.UI_UPDATE_FPS)) return;
+    state.lastUI = now;
 
-    // Throttle UI updates
-    if (now - state.lastUIUpdate < (1000 / CONFIG.UI_UPDATE_FPS)) return;
-    state.lastUIUpdate = now;
+    const coinEl = $('#coin-display');
+    if (coinEl) coinEl.textContent = fmt(state.coins) + ' 🪙';
 
-    // Coins
-    const coinsEl = $('#coin-display');
-    if (coinsEl) coinsEl.textContent = formatNumber(state.coins);
+    const lvlEl = $('#level-display');
+    if (lvlEl) lvlEl.textContent = state.level;
 
-    // Level
-    const levelEl = $('#level-display');
-    if (levelEl) levelEl.textContent = state.level;
-
-    // XP Bar
     const xpBar = $('#xp-bar-fill');
     const xpText = $('#xp-text');
     if (xpBar && xpText) {
-      const required = getXPRequired(state.level);
-      const pct = state.level >= CONFIG.MAX_LEVEL ? 100 : (state.xp / required * 100);
+      const req = xpReq(state.level);
+      const pct = state.level >= CONFIG.MAX_LEVEL ? 100 : Math.min(100, state.xp / req * 100);
       xpBar.style.width = pct + '%';
-      xpText.textContent = state.level >= CONFIG.MAX_LEVEL 
-        ? 'MAX' 
-        : `${formatNumber(state.xp)} / ${formatNumber(required)}`;
+      xpText.textContent = state.level >= CONFIG.MAX_LEVEL ? 'МАКС' : `${fmt(state.xp)} / ${fmt(req)} досвіду`;
     }
 
-    // Garden emoji
     const garden = $('.garden');
-    if (garden) {
-      garden.textContent = getGardenEmoji(state.level);
-    }
+    if (garden) garden.textContent = gardenEmoji(state.level);
 
-    // Auto-growth rate
     const autoEl = $('#auto-display');
     if (autoEl) {
-      const rate = getAutoGrowthRate();
-      autoEl.textContent = rate > 0 ? `+${rate.toFixed(1)}/s` : '';
+      const r = getAuto();
+      autoEl.textContent = r > 0 ? `+${r.toFixed(1)} 🪙/сек` : '';
     }
 
-    // Boosters bar
-    updateBoostersBar();
-
-    // Active events
+    updateBoostsBar();
     updateEventsBar();
+    updateMissions();
+    updateInventory();
+    updateFlowers();
+    updateAchievements();
 
-    // Missions
-    updateMissionsPanel();
-
-    // Streak
     const streakEl = $('#streak-display');
-    if (streakEl) {
-      streakEl.textContent = state.streakDays > 1 ? `🔥 ${state.streakDays}` : '';
-    }
+    if (streakEl) streakEl.textContent = state.streak > 1 ? `🔥 ${state.streak}` : '';
 
-    // Inventory
-    updateInventoryPanel();
-
-    // Stats
     const statsEl = $('#stats-display');
     if (statsEl) {
       statsEl.innerHTML = `
-        <div>🖱️ ${formatNumber(state.totalClicks)} clicks</div>
-        <div>🧩 ${state.stats.totalPuzzles} puzzles</div>
-        <div>🌟 Level ${state.stats.highestLevel}</div>
+        <div>🖱️ ${fmt(state.clicks)} кліків</div>
+        <div>🧩 ${state.stats.puzzles} пазлів</div>
+        <div>⭐ Макс рівень: ${state.stats.maxLevel}</div>
       `;
     }
   }
 
-  function updateBoostersBar() {
+  function updateBoostsBar() {
     const bar = $('#boosters-bar');
     if (!bar) return;
-
     const now = Date.now();
-    const active = state.activeBoosts.filter(b => b.endTime > now);
-
-    if (active.length === 0) {
-      bar.innerHTML = '';
-      return;
-    }
-
+    const active = state.boosts.filter(b => b.end > now);
+    if (active.length === 0) { bar.innerHTML = ''; return; }
     bar.innerHTML = active.map(b => {
-      const remaining = Math.ceil((b.endTime - now) / 1000);
-      return `<div class="booster-badge">${b.emoji} ${remaining}s</div>`;
+      const sec = Math.ceil((b.end - now) / 1000);
+      return `<div class="booster-badge">${b.emoji} ${sec}с</div>`;
     }).join('');
   }
 
   function updateEventsBar() {
     const bar = $('#events-bar');
     if (!bar) return;
-
     const now = Date.now();
-    const active = state.activeEvents.filter(e => e.endTime > now);
-
-    if (active.length === 0) {
-      bar.innerHTML = '';
-      return;
-    }
-
+    const active = state.events.filter(e => e.end > now);
+    if (active.length === 0) { bar.innerHTML = ''; return; }
     bar.innerHTML = active.map(e => {
-      const remaining = Math.ceil((e.endTime - now) / 1000);
-      return `<div class="event-badge">${e.emoji} ${remaining}s</div>`;
+      const sec = Math.ceil((e.end - now) / 1000);
+      return `<div class="event-badge">${e.emoji} ${sec}с</div>`;
     }).join('');
   }
 
-  function updateMissionsPanel() {
-    const panel = $('#missions-list');
-    if (!panel) return;
-
-    if (state.dailyMissions.length === 0) {
-      panel.innerHTML = '<li>No active missions</li>';
-      return;
-    }
-
-    panel.innerHTML = state.dailyMissions.map(m => {
-      const pct = Math.min(100, (m.progress / m.target * 100));
+  function updateMissions() {
+    const list = $('#missions-list');
+    if (!list) return;
+    if (!state.missions.length) { list.innerHTML = '<li>Немає активних місій</li>'; return; }
+    list.innerHTML = state.missions.map(m => {
+      const pct = Math.min(100, m.prog / m.target * 100);
       return `
-        <li class="mission-item ${m.completed ? 'completed' : ''}">
+        <li class="mission-item ${m.done ? 'completed' : ''}">
           <div class="mission-text">${m.text}</div>
           <div class="mission-progress">
             <div class="mission-bar" style="width:${pct}%"></div>
-            <span>${formatNumber(m.progress)}/${formatNumber(m.target)}</span>
+            <span>${fmt(m.prog)}/${fmt(m.target)}</span>
           </div>
-          <div class="mission-reward">+${formatNumber(m.rewardCoins)}🪙</div>
+          <div class="mission-reward">+${fmt(m.reward)}🪙</div>
         </li>
       `;
     }).join('');
   }
 
-  function updateInventoryPanel() {
-    const panel = $('#inventory-list');
-    if (!panel) return;
-
+  function updateInventory() {
+    const list = $('#inventory-list');
+    if (!list) return;
     const items = [];
     Object.entries(state.inventory.boosters).forEach(([type, count]) => {
       if (count > 0) {
         const b = BOOSTERS[type];
-        if (b && state.level >= b.unlockLevel) {
-          items.push({ type, emoji: b.emoji, name: b.name, count });
-        }
+        if (b && state.level >= b.unlock) items.push({ type, emoji: b.emoji, name: b.name, count });
       }
     });
-
-    if (items.length === 0) {
-      panel.innerHTML = '<li>No items yet</li>';
-      return;
-    }
-
-    panel.innerHTML = items.map(item => `
-      <li class="inventory-item" data-type="${item.type}">
-        <span>${item.emoji} ${item.name}</span>
-        <span class="item-count">×${item.count}</span>
-        <button class="use-btn" data-type="${item.type}">Use</button>
+    if (!items.length) { list.innerHTML = '<li>Поки що порожньо</li>'; return; }
+    list.innerHTML = items.map(it => `
+      <li class="inventory-item">
+        <span>${it.emoji} ${it.name}</span>
+        <span class="item-count">×${it.count}</span>
+        <button class="use-btn" data-boost="${it.type}">Використати</button>
       </li>
     `).join('');
-
-    // Attach handlers
-    panel.querySelectorAll('.use-btn').forEach(btn => {
-      btn.onclick = () => useBooster(btn.dataset.type);
+    list.querySelectorAll('.use-btn').forEach(btn => {
+      btn.onclick = () => useBooster(btn.dataset.boost);
     });
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  VISUAL EFFECTS
-  // ═══════════════════════════════════════════════════════════════
-  function createFloatingText(text, clickEvent) {
-    const el = document.createElement('div');
-    el.className = 'floating-text';
-    el.textContent = text;
-
-    const x = clickEvent ? clickEvent.clientX : window.innerWidth / 2;
-    const y = clickEvent ? clickEvent.clientY : window.innerHeight / 2;
-
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    document.body.appendChild(el);
-
-    setTimeout(() => el.remove(), 1000);
+  function updateFlowers() {
+    const list = $('#flower-list');
+    if (!list) return;
+    const allLevels = Object.keys(FLOWERS).map(Number).sort((a, b) => a - b);
+    list.innerHTML = allLevels.map(lvl => {
+      const f = FLOWERS[lvl];
+      const unlocked = state.unlocked.includes(lvl);
+      const current = state.level >= lvl;
+      return `<li style="opacity:${unlocked ? 1 : 0.4}">
+        ${unlocked ? f.emoji : '🔒'} ${f.name} 
+        ${unlocked ? '— Розблоковано' : current ? '— Доступно' : `— Рівень ${lvl}`}
+        <span style="font-size:11px;opacity:0.6">${f.rarity === 'common' ? '⭐' : f.rarity === 'uncommon' ? '⭐⭐' : f.rarity === 'rare' ? '⭐⭐⭐' : f.rarity === 'epic' ? '⭐⭐⭐⭐' : f.rarity === 'legendary' ? '⭐⭐⭐⭐⭐' : '👑'}</span>
+      </li>`;
+    }).join('');
   }
 
-  function spawnParticles(x, y) {
-    for (let i = 0; i < 5; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      p.textContent = ['✨','🌸','🌿','💫','🪙'][randInt(0, 4)];
-      p.style.left = (x + rand(-30, 30)) + 'px';
-      p.style.top = (y + rand(-30, 30)) + 'px';
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 800);
-    }
-  }
-
-  function showMessage(text) {
-    const msg = $('#message');
-    if (!msg) return;
-    msg.textContent = text;
-    msg.classList.remove('hidden');
-
-    clearTimeout(msg._timeout);
-    msg._timeout = setTimeout(() => msg.classList.add('hidden'), 2500);
-  }
-
-  function showEpicLevelUp(level, reward) {
-    const overlay = document.createElement('div');
-    overlay.className = 'epic-overlay';
-    overlay.innerHTML = `
-      <div class="epic-modal">
-        <div class="epic-emoji">🎁</div>
-        <h2>EPIC LEVEL ${level}!</h2>
-        <p class="epic-reward">+${formatNumber(reward.coins)} 🪙</p>
-        ${reward.booster ? `<p class="epic-booster">${BOOSTERS[reward.booster].emoji} ${BOOSTERS[reward.booster].name} unlocked!</p>` : ''}
-        <p class="epic-hint">${getLevelUnlockText(level)}</p>
-        <button class="big-button" onclick="this.closest('.epic-overlay').remove()">Claim!</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  }
-
-  function getLevelUnlockText(level) {
-    const texts = {
-      5: 'Auto-Growth unlocked! Your garden grows while you sleep.',
-      10: 'Memory Garden puzzle unlocked! Test your mind.',
-      15: 'Flower Path puzzle unlocked! Choose wisely.',
-      20: 'Legendary Events unlocked! Rare wonders await.',
-      25: 'Star Lily blooms! Your garden shines.',
-      30: 'Dream Orchid achieved! Prestige awaits...',
-    };
-    return texts[level] || 'New content unlocked!';
+  function updateAchievements() {
+    const list = $('#achievements-list');
+    if (!list) return;
+    const achs = [
+      { id: 'first',    text: '🌱 Перші кроки — 10 кліків',          check: state.clicks >= 10 },
+      { id: 'grower',   text: '🌿 Садівник — Рівень 5',              check: state.level >= 5 },
+      { id: 'bloom',    text: '🌸 Цвітіння — Рівень 10',             check: state.level >= 10 },
+      { id: 'star',     text: '⭐ Зоряний садівник — Рівень 20',     check: state.level >= 20 },
+      { id: 'dream',    text: '💫 Майстер мрій — Рівень 30',         check: state.level >= 30 },
+      { id: 'puzzler',  text: '🧩 Розумник — 10 пазлів',             check: state.stats.puzzles >= 10 },
+      { id: 'rich',     text: '🪙 Багатій — 10 000 монет',           check: state.earned >= 10000 },
+      { id: 'streak7',  text: '🔥 Вірний — Streak 7 днів',           check: state.stats.maxStreak >= 7 },
+    ];
+    list.innerHTML = achs.map(a => `<li style="opacity:${a.check ? 1 : 0.4};${a.check ? 'font-weight:600;' : ''}">${a.text} ${a.check ? '✅' : ''}</li>`).join('');
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  GAME LOOP
+  //  ІГРОВИЙ ЦИКЛ
   // ═══════════════════════════════════════════════════════════════
   let lastEventCheck = 0;
-  let autoSaveTimer = 0;
+  let saveTimer = 0;
 
-  function gameLoop(timestamp) {
+  function loop() {
     const now = Date.now();
     const dt = (now - state.lastTick) / 1000;
     state.lastTick = now;
 
-    // Auto-growth (idle income)
-    const autoRate = getAutoGrowthRate();
-    if (autoRate > 0) {
-      const earned = autoRate * dt;
-      state.coins += earned;
-      state.totalCoinsEarned += earned;
-      state.totalGrowth += earned;
+    // Auto-growth
+    const auto = getAuto();
+    if (auto > 0) {
+      const earned = auto * dt;
+      state.coins += earned; state.earned += earned; state.growth += earned;
     }
 
-    // Update boosters & events
-    updateBoosters();
+    // Update timers
+    updateBoosts();
     updateEvents();
 
-    // Random event check
+    // Random events
     if (now - lastEventCheck > CONFIG.EVENT_CHECK_INTERVAL) {
-      checkRandomEvent();
+      checkEvent();
       lastEventCheck = now;
     }
 
-    // Random puzzle trigger
-    if (canTriggerPuzzle() && Math.random() < CONFIG.PUZZLE_CHANCE) {
-      triggerPuzzle('random');
+    // Random puzzles
+    if (canPuzzle() && Math.random() < CONFIG.PUZZLE_CHANCE) {
+      tryPuzzle('random');
     }
 
     // Auto-save
-    autoSaveTimer += dt * 1000;
-    if (autoSaveTimer >= CONFIG.AUTO_SAVE_INTERVAL) {
-      saveGame();
-      autoSaveTimer = 0;
-    }
+    saveTimer += dt * 1000;
+    if (saveTimer >= CONFIG.AUTO_SAVE_INTERVAL) { save(); saveTimer = 0; }
 
-    // Update UI
     updateUI();
-
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  INITIALIZATION
+  //  ІНІЦІАЛІЗАЦІЯ
   // ═══════════════════════════════════════════════════════════════
   function init() {
-    loadGame();
+    load();
 
-    // Bind garden click
+    // Garden click
     const garden = $('.garden');
     if (garden) {
       garden.style.cursor = 'pointer';
-      garden.addEventListener('click', handleGardenClick);
+      garden.addEventListener('click', onGardenClick);
+      garden.addEventListener('touchstart', (e) => { e.preventDefault(); onGardenClick(e.touches[0]); }, {passive: false});
     }
 
-    // Bind puzzle button
+    // Grow button
+    const growBtn = $('#grow-btn');
+    if (growBtn) {
+      growBtn.addEventListener('click', onGrowBtnClick);
+      growBtn.addEventListener('touchstart', (e) => { e.preventDefault(); onGrowBtnClick(e.touches[0]); }, {passive: false});
+    }
+
+    // Puzzle button
     const puzzleBtn = $('#puzzle-btn');
     if (puzzleBtn) {
-      puzzleBtn.addEventListener('click', () => triggerPuzzle('manual'));
+      puzzleBtn.addEventListener('click', () => {
+        if (!canPuzzle()) {
+          const sec = Math.ceil((state.puzzleCD - Date.now()) / 1000);
+          msg(`⏳ Пазл через ${sec}с`);
+          return;
+        }
+        tryPuzzle('manual');
+      });
     }
 
-    // Bind boost shop
-    const boostShop = $('#boost-shop');
-    if (boostShop) {
-      boostShop.addEventListener('click', () => {
-        // Simple boost purchase
-        if (state.coins >= 200) {
-          state.coins -= 200;
-          const types = Object.keys(BOOSTERS).filter(t => state.level >= BOOSTERS[t].unlockLevel);
-          if (types.length > 0) {
-            const type = types[randInt(0, types.length - 1)];
-            addBoosterToInventory(type, 1);
-            showMessage(`🛒 Bought ${BOOSTERS[type].emoji}!`);
-            saveGame();
-          }
-        } else {
-          showMessage('❌ Need 200🪙');
+    // Boost shop
+    const shopBtn = $('#boost-shop');
+    if (shopBtn) {
+      shopBtn.addEventListener('click', () => {
+        if (state.coins < 200) { msg('❌ Потрібно 200🪙'); return; }
+        const avail = Object.keys(BOOSTERS).filter(t => state.level >= BOOSTERS[t].unlock);
+        if (!avail.length) { msg('🔒 Спочатку прокачай рівень!'); return; }
+        const type = avail[randInt(0, avail.length - 1)];
+        state.coins -= 200;
+        addInv(type, 1);
+        msg(`🛒 Куплено ${BOOSTERS[type].emoji}!`);
+        save(); updateUI();
+      });
+    }
+
+    // Inventory delegation (for dynamic buttons)
+    const invList = $('#inventory-list');
+    if (invList) {
+      invList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('use-btn')) {
+          useBooster(e.target.dataset.boost);
         }
       });
     }
 
-    // Start loop
+    // Start
     state.lastTick = Date.now();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
 
-    // Welcome message
-    if (state.totalClicks === 0) {
-      showMessage('🌸 Welcome to Dream Garden! Tap to grow!');
+    if (state.clicks === 0) {
+      msg('🌸 Вітаємо у Dream Garden! Тапай, щоб рости!');
     } else {
-      showMessage(`🌸 Welcome back! Level ${state.level}`);
+      msg(`🌸 З поверненням! Рівень ${state.level}`);
     }
 
-    console.log('🌸 Dream Garden v2.0 initialized');
+    console.log('🌸 Dream Garden v2.1 запущено');
   }
 
-  // Expose for inline handlers
-  window.DreamGarden = { puzzleActive: state.puzzleActive };
+  // Telegram Web App init
+  if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
 
-  // Start when DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
