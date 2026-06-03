@@ -1,77 +1,108 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Dream Garden 🌸</title>
-
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Telegram WebApp SDK -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-extension.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<base target="_blank">
 </head>
-
 <body>
   <div class="app">
 
-    <!-- HEADER -->
-    <header class="top-bar">
-      <div class="title">🌸 Dream Garden</div>
-
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="title">
+        🌸 Dream Garden
+        <span class="level-badge" id="level-display">1</span>
+      </div>
       <div class="stats">
-        <div class="stat">
-          🌼 <span id="flowers">0</span>
-        </div>
-        <div class="stat">
-          💰 <span id="coins">0</span>
-        </div>
+        <div class="stat" id="coin-display">0 🪙</div>
+        <div class="streak-indicator" id="streak-display"></div>
       </div>
-    </header>
+    </div>
 
-    <!-- MAIN GAME AREA -->
-    <main class="game-area">
-
-      <div class="garden" id="garden">
-        🌿
+    <!-- XP BAR -->
+    <div class="xp-bar-container">
+      <div class="xp-bar">
+        <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%"></div>
       </div>
+      <div class="xp-text" id="xp-text">0 / 100 XP</div>
+    </div>
 
-      <button class="big-button" id="growBtn">
-        Натискай, щоб вирощувати 🌸
-      </button>
+    <!-- BOOSTERS & EVENTS BAR -->
+    <div id="boosters-bar"></div>
+    <div id="events-bar"></div>
 
-      <p class="hint">
-        Вирощуй сад і відкривай нові квіти ✨
-      </p>
+    <!-- GAME AREA -->
+    <div class="game-area">
+      <div class="garden" id="garden">🌱</div>
+      <div id="auto-display" style="font-size: 12px; opacity: 0.6; margin-top: 4px;"></div>
+    </div>
 
-    </main>
+    <!-- MAIN BUTTONS -->
+    <button class="big-button" id="grow-btn">
+      🌱 Grow Your Garden
+    </button>
 
-    <!-- SHOP -->
-    <section class="panel">
-      <h2>Магазин 🏪</h2>
+    <button class="big-button" id="puzzle-btn" style="margin-top: 10px; background: linear-gradient(135deg, #a18cd1, #fbc2eb);">
+      🧩 Puzzle Challenge
+    </button>
 
-      <button class="shop-btn" id="buyFlower">
-        Купити покращення (+1 до кліку) — 10 💰
-      </button>
+    <p class="hint">Tap the garden or click buttons to grow!</p>
 
-      <button class="shop-btn" id="buyAuto">
-        Авто-рост (1/сек) — 50 💰
-      </button>
-    </section>
+    <!-- STATS -->
+    <div id="stats-display"></div>
+
+    <!-- DAILY MISSIONS PANEL -->
+    <div class="panel">
+      <h2>📋 Daily Missions</h2>
+      <ul id="missions-list">
+        <li>Loading missions...</li>
+      </ul>
+    </div>
+
+    <!-- INVENTORY PANEL -->
+    <div class="panel">
+      <h2>🎒 Inventory</h2>
+      <ul id="inventory-list">
+        <li>No items yet</li>
+      </ul>
+    </div>
+
+    <!-- BOOST SHOP -->
+    <div class="panel">
+      <h2>⚡ Boost Shop</h2>
+      <p style="font-size: 12px; opacity: 0.7; margin-bottom: 10px;">Buy random boosters for 200🪙</p>
+      <button class="shop-btn" id="boost-shop">🛒 Buy Booster (200🪙)</button>
+    </div>
+
+    <!-- FLOWER COLLECTION -->
+    <div class="panel">
+      <h2>🌺 Flower Collection</h2>
+      <ul id="flower-list">
+        <li>🌱 Sprout — Unlocked</li>
+      </ul>
+    </div>
 
     <!-- ACHIEVEMENTS -->
-    <section class="panel">
-      <h2>Досягнення 🏆</h2>
-      <ul id="achievements">
-        <li>🌱 Посади 10 квітів</li>
-        <li>🌸 Посади 100 квітів</li>
-        <li>💰 Назбирай 500 монет</li>
+    <div class="panel">
+      <h2>🏆 Achievements</h2>
+      <ul id="achievements-list">
+        <li>🌱 First Steps — Click 10 times</li>
+        <li>🌿 Growing — Reach level 5</li>
+        <li>🌸 Blooming — Reach level 10</li>
+        <li>⭐ Star Gardener — Reach level 20</li>
+        <li>💫 Dream Master — Reach level 30</li>
       </ul>
-    </section>
-
-    <!-- FLOATING MESSAGE -->
-    <div id="message" class="message hidden"></div>
+    </div>
 
   </div>
+
+  <!-- MESSAGE POPUP -->
+  <div class="message hidden" id="message">Welcome!</div>
 
   <script src="script.js"></script>
 </body>
