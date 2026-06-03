@@ -1,326 +1,78 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Пригода для Міли ✨</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Dream Garden 🌸</title>
 
-        body {
-            background: linear-gradient(180deg, #fff0f3 0%, #ffccd5 100%);
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            padding: 20px;
-        }
+  <link rel="stylesheet" href="style.css" />
 
-        /* Екрани рівнів */
-        .screen {
-            display: none;
-            width: 100%;
-            max-width: 360px;
-            height: 85vh;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 15px 35px rgba(255, 75, 120, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-        }
-
-        .screen.active {
-            display: flex;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Заголовки */
-        .level-badge {
-            background: #ff477e;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1s;
-        }
-
-        h2 { color: #ff477e; font-size: 24px; margin-top: 10px; }
-        p.desc { color: #6c757d; font-size: 14px; margin: 10px 0; line-height: 1.4; }
-
-        /* Загальна кнопка */
-        .btn {
-            background: #ff7096;
-            color: white;
-            border: none;
-            padding: 14px 35px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255, 112, 150, 0.4);
-            width: 80%;
-            transition: 0.2s;
-        }
-        .btn:active { transform: scale(0.95); }
-
-        /* --- СТИЛІ РІВНЯ 1 (Клікер) --- */
-        #game-canvas {
-            width: 100%;
-            height: 50%;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
-            position: relative;
-            overflow: hidden;
-            border: 1px dashed #ffb3c1;
-        }
-        .falling-heart {
-            position: absolute;
-            font-size: 30px;
-            cursor: pointer;
-            animation: fall 2.5s linear forwards;
-        }
-        @keyframes fall {
-            0% { top: -40px; }
-            100% { top: 100%; }
-        }
-        .score-board { font-size: 18px; font-weight: bold; color: #ff477e; }
-
-        /* --- СТИЛІ РІВНЯ 2 (Код) --- */
-        .input-code {
-            width: 90%;
-            padding: 12px;
-            border: 2px solid #ffccd5;
-            border-radius: 15px;
-            font-size: 16px;
-            text-align: center;
-            outline: none;
-            color: #ff477e;
-            font-weight: bold;
-        }
-        .input-code:focus { border-color: #ff477e; }
-        .hint { font-size: 12px; color: #9c89b8; font-style: italic; }
-
-        /* --- СТИЛІ РІВНЯ 3 (Колесо) --- */
-        .wheel-container {
-            position: relative;
-            width: 200px;
-            height: 200px;
-        }
-        .wheel {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 5px solid #ff477e;
-            background: conic-gradient(
-                #ffccd5 0deg 120deg, 
-                #ff7096 120deg 240deg, 
-                #ff477e 240deg 360deg
-            );
-            transition: transform 3s cubic-bezier(0.1, 0.8, 0.1, 1);
-        }
-        .wheel-pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            z-index: 10;
-        }
-        .prize-box {
-            background: #fff;
-            padding: 15px;
-            border-radius: 15px;
-            border: 2px dashed #ff477e;
-            font-weight: bold;
-            color: #ff477e;
-            display: none;
-            animation: pop 0.5s ease;
-        }
-        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-    </style>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
+
 <body>
+  <div class="app">
 
-    <!-- СТАРТОВИЙ ЕКРАН -->
-    <div class="screen active" id="scr-start">
-        <div style="margin-top: 40px;">
-            <div style="font-size: 60px;">🎁</div>
-            <h2>Пригода для Міли</h2>
-            <p class="desc">Привіт, сонечко! Я приготував для тебе квест із 3 рівнів. Пройди їх усі й отримай гарантований приз! Готова?</p>
+    <!-- HEADER -->
+    <header class="top-bar">
+      <div class="title">🌸 Dream Garden</div>
+
+      <div class="stats">
+        <div class="stat">
+          🌼 <span id="flowers">0</span>
         </div>
-        <button class="btn" onclick="nextScreen('scr-l1')">Почати гру 🚀</button>
-    </div>
-
-    <!-- РІВЕНЬ 1: КЛІКЕР -->
-    <div class="screen" id="scr-l1">
-        <div class="level-badge">Рівень 1</div>
-        <h2>Впіймай кохання</h2>
-        <p class="desc">Зверху падають мої серця! Встигни клікнути/тапнути на 10 сердечок, поки не сплив час!</p>
-        <div class="score-board">Зловлено: <span id="score">0</span> / 10</div>
-        <div id="game-canvas"></div>
-        <button class="btn" id="start-l1-btn" onclick="startLevel1()">Старт 🎯</button>
-    </div>
-
-    <!-- РІВЕНЬ 2: ЗАГАДКА -->
-    <div class="screen" id="scr-l2">
-        <div class="level-badge">Рівень 2</div>
-        <h2>Таємне слово</h2>
-        <p class="desc">Щоб відкрити сейф із призами, введи слово-пароль. <br><b>Підказка:</b> Яке твоє найулюбленіше кодове слово, лагідне ім'я, або дата? (Наприклад, твоє ім'я або слово "кохання")</p>
-        <div style="width: 100%; display:flex; flex-direction:column; gap: 15px; align-items:center;">
-            <!-- НАЛАШТУЙ ПАРОЛЬ ТУТ. Зараз стоїть: міла -->
-            <input type="text" class="input-code" id="secret-input" placeholder="Введи пароль тут...">
-            <p class="hint" id="l2-error" style="color: red; display:none;">Ой, невірний пароль! Спробуй ще раз 😘</p>
+        <div class="stat">
+          💰 <span id="coins">0</span>
         </div>
-        <button class="btn" onclick="checkLevel2()">Перевірити 🔑</button>
-    </div>
+      </div>
+    </header>
 
-    <!-- РІВЕНЬ 3: ПРИЗИ -->
-    <div class="screen" id="scr-l3">
-        <div class="level-badge">Фінал 🏆</div>
-        <h2>Колесо суперпризів!</h2>
-        <p class="desc">Ти впоралась! Залишився останній крок — крути колесо і забирай свій подарунок!</p>
-        
-        <div class="wheel-container">
-            <div class="wheel-pointer">👇</div>
-            <div class="wheel" id="wheel"></div>
-        </div>
+    <!-- MAIN GAME AREA -->
+    <main class="game-area">
 
-        <div class="prize-box" id="prize-result"></div>
+      <div class="garden" id="garden">
+        🌿
+      </div>
 
-        <button class="btn" id="spin-btn" onclick="spinWheel()">Крутити колесо 🎪</button>
-    </div>
+      <button class="big-button" id="growBtn">
+        Натискай, щоб вирощувати 🌸
+      </button>
 
-    <script>
-        // Ініціалізація Telegram
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.setHeaderColor('#fff0f3');
+      <p class="hint">
+        Вирощуй сад і відкривай нові квіти ✨
+      </p>
 
-        function nextScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
+    </main>
 
-        // --- ЛОГІКА РІВНЯ 1 ---
-        let score = 0;
-        let gameInterval;
-        function startLevel1() {
-            document.getElementById('start-l1-btn').style.display = 'none';
-            score = 0;
-            document.getElementById('score').textContent = score;
-            
-            gameInterval = setInterval(() => {
-                createFallingHeart();
-            }, 600);
-        }
+    <!-- SHOP -->
+    <section class="panel">
+      <h2>Магазин 🏪</h2>
 
-        function createFallingHeart() {
-            const canvas = document.getElementById('game-canvas');
-            if(!canvas) return;
-            const heart = document.createElement('div');
-            heart.classList.add('falling-heart');
-            heart.textContent = ['❤️','💖','💝','💕'][Math.floor(Math.random()*4)];
-            heart.style.left = Math.random() * (canvas.clientWidth - 40) + 'px';
-            
-            heart.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // для мобілок
-                heartHit(heart);
-            });
-            heart.addEventListener('click', () => heartHit(heart));
+      <button class="shop-btn" id="buyFlower">
+        Купити покращення (+1 до кліку) — 10 💰
+      </button>
 
-            canvas.appendChild(heart);
-            setTimeout(() => { if(heart) heart.remove(); }, 2500);
-        }
+      <button class="shop-btn" id="buyAuto">
+        Авто-рост (1/сек) — 50 💰
+      </button>
+    </section>
 
-        function heartHit(heart) {
-            heart.remove();
-            score++;
-            document.getElementById('score').textContent = score;
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    <!-- ACHIEVEMENTS -->
+    <section class="panel">
+      <h2>Досягнення 🏆</h2>
+      <ul id="achievements">
+        <li>🌱 Посади 10 квітів</li>
+        <li>🌸 Посади 100 квітів</li>
+        <li>💰 Назбирай 500 монет</li>
+      </ul>
+    </section>
 
-            if(score >= 10) {
-                clearInterval(gameInterval);
-                document.getElementById('game-canvas').innerHTML = '<h3 style="color:#ff477e; margin-top:30%;">Чудово! Рівень пройдено! 🌟</h3>';
-                setTimeout(() => { nextScreen('scr-l2'); }, 1500);
-            }
-        }
+    <!-- FLOATING MESSAGE -->
+    <div id="message" class="message hidden"></div>
 
-        // --- ЛОГІКА РІВНЯ 2 ---
-        function checkLevel2() {
-            const input = document.getElementById('secret-input').value.trim().toLowerCase();
-            // Сюди впиши правильну відповідь (зараз це "міла" або "мила")
-            if(input === 'міла' || input === 'мила' || input === 'кохання') {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                nextScreen('scr-l3');
-            } else {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                document.getElementById('l2-error').style.display = 'block';
-            }
-        }
+  </div>
 
-        // --- ЛОГІКА РІВНЯ 3 (ПРИЗИ) ---
-        function spinWheel() {
-            const wheel = document.getElementById('wheel');
-            const spinBtn = document.getElementById('spin-btn');
-            spinBtn.disabled = true;
-            
-            // Випадковий кут обертання (мінімум 5 обертів + випадковий сектор)
-            const randomDegrees = Math.floor(Math.random() * 360) + 1800; 
-            wheel.style.transform = `rotate(${randomDegrees}deg)`;
-
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-
-            setTimeout(() => {
-                // Визначаємо приз на основі фінального кута
-                const finalAngle = randomDegrees % 360;
-                let prize = "";
-
-                // 3 сектори призових купонів (можеш змінити тексти на свої!)
-                if (finalAngle >= 0 && finalAngle < 120) {
-                    prize = "🎟️ Купон на Велике Романтичне Побачення! ☕✨";
-                } else if (finalAngle >= 120 && finalAngle < 240) {
-                    prize = "🎟️ Купон на 1000 і 1 обійму та ніжний масаж! 💆‍♀️🧸";
-                } else {
-                    prize = "🎟️ Купон на виконання будь-якого твого бажання! 👑💫";
-                }
-
-                const resultBox = document.getElementById('prize-result');
-                resultBox.textContent = prize;
-                resultBox.style.display = 'block';
-                
-                document.querySelector('#scr-l3 h2').textContent = "Вітання Переможниці! 🎉";
-                spinBtn.style.display = 'none';
-
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                
-                // Опціонально: відправити результат боту, щоб ти знав, що вона виграла
-                // tg.sendData(JSON.stringify({prize: prize})); 
-            }, 3000);
-        }
-    </script>
+  <script src="script.js"></script>
 </body>
 </html>
